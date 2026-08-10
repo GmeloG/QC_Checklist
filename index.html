@@ -11,6 +11,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="QC Quadros">
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <style>
 :root{
   --blue:#1F3864; --accent:#2E74B5; --light:#DEEAF6; --grey:#F2F4F7;
@@ -181,7 +185,7 @@ const FASE1_LAST=FASE1.length-1; // último índice da Fase 1
 const LS="qc_inspecoes_v2";
 let DB=load(), cur=null, idx=0, view="home";
 function load(){ try{return JSON.parse(localStorage.getItem(LS))||[]}catch(e){return[]} }
-function save(){ try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){toast("Armazenamento cheio (fotos grandes).","err");} }
+function save(){ try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){toast("Armazenamento cheio (fotos grandes).","err");} if(typeof scheduleCloud==="function") scheduleCloud(); }
 function uid(){ return "INS-"+new Date().getFullYear()+"-"+String(DB.length+1).padStart(4,"0"); }
 function fmt(d){ if(!d)return"—"; const x=new Date(d); return x.toLocaleDateString("pt-PT")+" "+x.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}); }
 function esc(s){ return (s||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m])); }
@@ -194,7 +198,7 @@ function go(v){ view=v; window.scrollTo(0,0); render(); }
 function render(){
   btnBack.style.display=(view==="home")?"none":"inline-block";
   hdrRight.innerHTML = (cur?cur.id+"<br>":"") + DOC_FULL;
-  ({home:renderHome,nova:renderNova,lista:renderLista,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio}[view]||renderHome)();
+  ({home:renderHome,nova:renderNova,lista:renderLista,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync}[view]||renderHome)();
 }
 
 // ===== HOME =====
@@ -206,6 +210,7 @@ function renderHome(){
       <button class="menu-btn" onclick="novaInspecao()"><span class="ico">＋</span><span>Nova inspeção<small>Iniciar uma nova validação de quadro</small></span></button>
       <button class="menu-btn" onclick="go('lista')"><span class="ico">📋</span><span>Inspeções e relatórios<small>${emCurso} em curso · ${concl} concluídas · abrir para editar</small></span></button>
       <button class="menu-btn" onclick="clearDB()" style="color:var(--nc)"><span class="ico">🗑️</span><span>Limpar base de dados<small>Apagar todos os relatórios guardados</small></span></button>
+      <button class="menu-btn" onclick="go('sync')"><span class="ico">☁️</span><span>Sincronização<small>${syncStatus()}</small></span></button>
       <button class="menu-btn" onclick="sobre()"><span class="ico">ℹ️</span><span>Sobre / versão<small>${DOC_FULL} · histórico de revisões</small></span></button>
     </div>
     <p class="small" style="margin-top:16px">Checklist «${DOC_FULL}» · ${N} pontos · Fase 1 (1.1–6.2) e Fase 2 (6.3–7.5).</p>`;
@@ -225,7 +230,7 @@ function sobre(){
 function novaInspecao(){ cur=null; go("nova"); }
 function clearDB(){ if(confirm("Isto apaga TODOS os relatórios/inspeções guardados neste dispositivo. Esta ação é irreversível. Continuar?")){ DB=[]; cur=null; save(); toast("Base de dados limpa.","ok"); go("home"); } }
 function editarInspecao(){ if(!cur)return; cur.estado="Em curso"; save(); idx=0; toast("Modo de edição — pode alterar as respostas.","ok"); go("checklist"); }
-function apagarInspecao(id,ev){ if(ev)ev.stopPropagation(); if(confirm("Apagar este relatório?")){ DB=DB.filter(i=>i.id!==id); save(); if(cur&&cur.id===id)cur=null; toast("Relatório apagado.","ok"); go("lista"); } }
+function apagarInspecao(id,ev){ if(ev)ev.stopPropagation(); if(confirm("Apagar este relatório?")){ DB=DB.filter(i=>i.id!==id); save(); if(typeof apagarNuvem==="function") apagarNuvem(id); if(cur&&cur.id===id)cur=null; toast("Relatório apagado.","ok"); go("lista"); } }
 
 // ===== NOVA =====
 function renderNova(){
@@ -258,11 +263,12 @@ function renderLista(){
   main.innerHTML=`<h1>Inspeções</h1>`+[...DB].reverse().map(i=>`
     <div class="list-item" onclick="abrir('${i.id}')">
       <div class="t"><div><b>${esc(i.doc||i.quadro||i.id)}</b></div><div class="code">${i.id} · ${esc(i.inspetor)} · ${new Date(i.inicio).toLocaleDateString("pt-PT")}</div></div>
-      <span class="pill ${norm(i.estado)}">${i.estado}</span>
+      <span class="pill ${norm(i.estado)}">${i.estado}${i.estado==="Em curso"?" · Fase "+faseDe(i):""}</span>
       <button title="Apagar" style="border:0;background:#f0e2e2;color:#b00;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px" onclick="apagarInspecao('${i.id}',event)">🗑</button>
     </div>`).join("");
 }
-function abrir(id){ cur=DB.find(i=>i.id===id); if(cur.estado==="Em curso"){ idx=firstPending(); go("checklist"); } else go("relatorio"); }
+function faseDe(i){ for(const p of PONTOS){ const r=i.respostas[p.c]; if(!r||!r.concluido) return p.fase; } return 2; }
+function abrir(id){ cur=DB.find(i=>i.id===id); if(typeof hydrate==="function") hydrate(cur); if(cur.estado==="Em curso"){ idx=firstPending(); go("checklist"); } else go("relatorio"); }
 function firstPending(){ for(let k=0;k<N;k++){ const r=cur.respostas[PONTOS[k].c]; if(!r||!r.concluido) return k; } return N-1; }
 
 // ===== CHECKLIST =====
@@ -347,11 +353,12 @@ function setRes(o){ const p=PONTOS[idx]; const r=cur.respostas[p.c]||{}; r.resul
 function setNum(v){ const p=PONTOS[idx]; const r=cur.respostas[p.c]||{}; r.valor=v; cur.respostas[p.c]=r; persist(); updateNav(); }
 function setObs(v){ const p=PONTOS[idx]; const r=cur.respostas[p.c]||{}; r.obs=v; cur.respostas[p.c]=r; persist(); updateNav(); }
 function updateNav(){ const p=PONTOS[idx],r=resp(),v=isValid(p,r); const h=document.getElementById("hint"); if(h){h.textContent=missMsg(p,r); h.className="hint "+(v?'':'show');} }
-function normFoto(f){ return (typeof f==="string")?{d:f,img:true,n:"foto.jpg"}:f; }
+function normFoto(f){ if(typeof f==="string") return {id:"L"+f.length,d:f,img:true,n:"foto.jpg"}; if(f&&!f.id) f.id="F"+Math.random().toString(36).slice(2,9); return f; }
 function shortName(n){ n=n||"ficheiro"; return n.length>16?n.slice(0,7)+"…"+n.slice(-6):n; }
 function addFoto(e){ const f=e.target.files[0]; if(!f)return; const isImg=(f.type||"").startsWith("image/"); const rd=new FileReader();
   rd.onload=()=>{ const store=o=>{ const p=PONTOS[idx]; const r=cur.respostas[p.c]||{}; r.fotos=r.fotos||[]; r.fotos.push(o); cur.respostas[p.c]=r; persist(); renderChecklist(); };
-    if(isImg) resizeImg(rd.result,1280,img=>store({d:img,img:true,n:f.name})); else store({d:rd.result,img:false,n:f.name}); };
+    const fid="F"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    if(isImg) resizeImg(rd.result,1280,img=>store({id:fid,d:img,img:true,n:f.name})); else store({id:fid,d:rd.result,img:false,n:f.name}); };
   rd.readAsDataURL(f); }
 function resizeImg(dataUrl,maxW,cb){ const img=new Image(); img.onload=()=>{ let w=img.width,h=img.height; if(w>maxW){h=h*maxW/w;w=maxW;} const cv=document.createElement("canvas"); cv.width=w;cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); cb(cv.toDataURL("image/jpeg",0.7)); }; img.onerror=()=>cb(dataUrl); img.src=dataUrl; }
 function delFoto(i){ const p=PONTOS[idx]; cur.respostas[p.c].fotos.splice(i,1); persist(); renderChecklist(); }
@@ -464,10 +471,112 @@ function renderRelatorio(){
     </div>`;
 }
 
+// ================== SINCRONIZAÇÃO (Firebase) ==================
+let FBauth=null, FBdb=null, FBuser=null, cloudReady=false, unsub=null, cloudTimer=null;
+const uploadedAtt=new Set();
+function cfgValid(){ const c=window.FIREBASE_CONFIG; return !!(c && c.apiKey && String(c.apiKey).indexOf("COLA_AQUI")<0 && c.projectId); }
+function syncStatus(){
+  if(!cfgValid()) return "Local apenas · toque para configurar a nuvem";
+  if(!cloudReady) return "A ligar à nuvem…";
+  if(FBuser) return "Ligado como "+FBuser.email+" · sincronizado";
+  return "Configurado · toque para entrar";
+}
+function initSync(){
+  if(!cfgValid() || typeof firebase==="undefined") return;
+  try{
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    FBauth=firebase.auth(); FBdb=firebase.firestore();
+    FBdb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+    cloudReady=true;
+    FBauth.onAuthStateChanged(u=>{ FBuser=u; if(u) subscribe(); else if(unsub){unsub();unsub=null;} if(["home","sync"].includes(view)) render(); });
+  }catch(e){ cloudReady=false; }
+}
+function subscribe(){
+  if(unsub)unsub();
+  unsub=FBdb.collection("inspecoes").onSnapshot(snap=>{
+    snap.docChanges().forEach(ch=>{
+      const remote=ch.doc.data(); if(!remote||!remote.id) return;
+      const li=DB.findIndex(x=>x.id===remote.id);
+      const editing = cur && cur.id===remote.id && ["checklist","assinatura","resumo","faseend"].includes(view);
+      if(editing) return; // quem está a editar tem prioridade
+      if(ch.type==="removed"){ if(li>=0){ DB.splice(li,1);} }
+      else { const merged=mergeCloud(li>=0?DB[li]:null, remote); if(li>=0)DB[li]=merged; else DB.push(merged); if(cur&&cur.id===merged.id)cur=merged; }
+    });
+    try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){}
+    if(["home","lista","relatorio","sync"].includes(view)) render();
+  }, err=>{ console.warn("sync",err); });
+}
+function mergeCloud(local, remote){
+  const localAtt={}; if(local&&local.respostas) Object.values(local.respostas).forEach(r=>(r.fotos||[]).forEach(f=>{ if(f&&f.id&&f.d) localAtt[f.id]=f; }));
+  const out=JSON.parse(JSON.stringify(remote));
+  if(out.respostas) Object.values(out.respostas).forEach(r=>{ if(r.fotos) r.fotos=r.fotos.map(f=>({...f, d:(f.d|| (localAtt[f.id]&&localAtt[f.id].d) || null)})); });
+  return out;
+}
+function scheduleCloud(){ if(!cloudReady||!FBuser||!cur) return; clearTimeout(cloudTimer); const snap=cur; cloudTimer=setTimeout(()=>pushCloud(snap),1200); }
+async function pushCloud(insp){
+  if(!cloudReady||!FBuser||!insp) return;
+  try{
+    const light=JSON.parse(JSON.stringify(insp)); const atts=[];
+    if(light.respostas) Object.values(light.respostas).forEach(r=>{ if(r.fotos) r.fotos=r.fotos.map(f=>{ f=normFoto(f); if(f.d) atts.push({id:f.id,n:f.n,img:f.img,d:f.d}); return {id:f.id,n:f.n,img:f.img}; }); });
+    light.uid=FBuser.uid; light.updatedAt=Date.now();
+    await FBdb.collection("inspecoes").doc(insp.id).set(light,{merge:true});
+    for(const a of atts){ if(!uploadedAtt.has(insp.id+"/"+a.id)){ try{ await FBdb.collection("inspecoes").doc(insp.id).collection("anexos").doc(a.id).set({n:a.n,img:a.img,d:a.d}); uploadedAtt.add(insp.id+"/"+a.id); }catch(e){} } }
+  }catch(e){ /* offline: o Firestore reenvia quando voltar a ligação */ }
+}
+async function hydrate(insp){
+  if(!cloudReady||!FBuser||!insp) return;
+  const falta=Object.values(insp.respostas||{}).some(r=>(r.fotos||[]).some(f=>f&&!f.d));
+  if(!falta) return;
+  try{
+    const snap=await FBdb.collection("inspecoes").doc(insp.id).collection("anexos").get();
+    const map={}; snap.forEach(d=>map[d.id]=d.data());
+    Object.values(insp.respostas||{}).forEach(r=>{ if(r.fotos) r.fotos=r.fotos.map(f=>(!f.d&&map[f.id])?{...f,d:map[f.id].d,n:map[f.id].n,img:map[f.id].img}:f); });
+    try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){}
+    if(["relatorio","checklist"].includes(view)) render();
+  }catch(e){}
+}
+async function apagarNuvem(id){ if(cloudReady&&FBuser){ try{ await FBdb.collection("inspecoes").doc(id).delete(); }catch(e){} } }
+// login / conta
+function entrar(){ const em=val("f_em"),pw=val("f_pw"); if(!em||!pw){toast("Preencha email e palavra-passe.","err");return;}
+  FBauth.signInWithEmailAndPassword(em,pw).then(()=>{toast("Sessão iniciada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
+function criarConta(){ const em=val("f_em"),pw=val("f_pw"); if(!em||pw.length<6){toast("Email válido e palavra-passe (mín. 6).","err");return;}
+  FBauth.createUserWithEmailAndPassword(em,pw).then(()=>{toast("Conta criada e ligada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
+function sair(){ FBauth.signOut().then(()=>{toast("Sessão terminada.","ok");go("sync");}); }
+function trad(e){ const m={"auth/invalid-email":"Email inválido.","auth/user-not-found":"Utilizador não encontrado.","auth/wrong-password":"Palavra-passe errada.","auth/email-already-in-use":"Este email já tem conta.","auth/weak-password":"Palavra-passe fraca (mín. 6).","auth/invalid-credential":"Credenciais inválidas."}; return m[e&&e.code]||("Erro: "+(e&&e.message||e)); }
+
+function renderSync(){
+  view="sync"; btnBack.style.display="inline-block";
+  if(!cfgValid()){
+    main.innerHTML=`<h1>Sincronização</h1>
+      <div class="card"><p><b>Ainda não configurada.</b></p>
+      <p class="small">A app está a funcionar só neste dispositivo. Para editar os relatórios no PC e no telemóvel, configura um projeto Firebase gratuito e cola os dados no ficheiro <b>firebase-config.js</b>. Vê o <b>README.md</b> (secção «Sincronização na nuvem»).</p></div>
+      <button class="btn ghost wide" onclick="go('home')">‹ Voltar</button>`; return;
+  }
+  if(!FBuser){
+    main.innerHTML=`<h1>Entrar</h1>
+      <div class="card grid">
+        <p class="small">Entra com a mesma conta no PC e no telemóvel para veres e editares os mesmos relatórios.</p>
+        <div><label class="fld">Email</label><input id="f_em" type="email" autocomplete="username"></div>
+        <div><label class="fld">Palavra-passe</label><input id="f_pw" type="password" autocomplete="current-password"></div>
+        <div class="row"><button class="btn primary" onclick="entrar()">Entrar</button><button class="btn ghost" onclick="criarConta()">Criar conta</button></div>
+      </div>
+      <button class="btn ghost wide" onclick="go('home')">‹ Voltar</button>`; return;
+  }
+  main.innerHTML=`<h1>Sincronização</h1>
+    <div class="card">
+      <p>✅ <b>Ligado</b> como ${esc(FBuser.email)}</p>
+      <p class="small">Os relatórios sincronizam automaticamente entre os teus dispositivos. Funciona offline e envia quando houver ligação.</p>
+      <p class="small">Inspeções na base local: ${DB.length}</p>
+    </div>
+    <button class="btn ghost wide" onclick="sair()">Terminar sessão</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">‹ Voltar</button>`;
+}
+
 // ===== PWA =====
 if("serviceWorker" in navigator && location.protocol!=="file:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
 
 render();
+window.addEventListener("load", initSync);
 </script>
 </body>
 </html>
