@@ -92,6 +92,8 @@ textarea{min-height:80px;resize:vertical;}
 .toast.show{opacity:1;}
 .toast.err{background:var(--nc);} .toast.ok{background:var(--ok);}
 .big-ok{font-size:54px;text-align:center;color:var(--ok);margin:6px 0;}
+.sig-pad{border:1px dashed var(--accent);border-radius:12px;background:#fff;touch-action:none;width:100%;height:170px;display:block;}
+.sig-img{height:70px;max-width:220px;border-bottom:1px solid #333;}
 @media print{
   body{background:#fff;} header,.navbar,.no-print{display:none !important;}
   .app{box-shadow:none;max-width:100%;} main{padding:0;}
@@ -177,6 +179,7 @@ const PONTOS=[
  {c:"7.4",s:"7. Aprovação Final",t:"Aprovação do Controlo da Qualidade",cr:"Quadro aprovado pelo inspetor de qualidade (reverificação nos pontos 7.1 e 7.2).",tp:"CNCNA",ob:1,rf:0,fase:2},
  {c:"7.5",s:"7. Aprovação Final",t:"Registos Fotográficos",cr:"Verificar se foi corretamente colocado no diretório do projeto.",tp:"CNCNA",ob:1,rf:1,fase:2},
 ];
+PONTOS.forEach(p=>p.rf=0); // fotografias nunca obrigatórias (anexar é sempre opcional)
 const N=PONTOS.length;
 const FASE1=PONTOS.filter(p=>p.fase===1), FASE2=PONTOS.filter(p=>p.fase===2);
 const FASE1_LAST=FASE1.length-1; // último índice da Fase 1
@@ -366,6 +369,29 @@ function next(){ const p=PONTOS[idx]; persist(isValid(p,resp())); if(idx===FASE1
 function prev(){ persist(); if(idx>0){ idx--; go("checklist"); } }
 function irResumo(){ persist(isValid(PONTOS[idx],resp())); go("resumo"); }
 
+// ===== Assinatura no ecrã (reutilizável) =====
+let _sig={cv:null,ctx:null,empty:true,drawing:false};
+function sigBlock(id, existing, label){
+  return `<label class="fld">${label||"Assinatura"}</label>
+    <canvas class="sig-pad" id="${id}"></canvas>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" onclick="clearSig()">Limpar assinatura</button></div>`;
+}
+function initSig(id, existing){
+  const cv=document.getElementById(id); if(!cv) return;
+  const r=cv.getBoundingClientRect(); cv.width=r.width||600; cv.height=r.height||170;
+  const ctx=cv.getContext("2d"); ctx.lineWidth=2.5; ctx.lineCap="round"; ctx.strokeStyle="#1F3864";
+  _sig={cv,ctx,empty:true,drawing:false};
+  const pos=e=>{const b=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-b.left,y:t.clientY-b.top};};
+  const start=e=>{_sig.drawing=true;_sig.empty=false;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();};
+  const move=e=>{if(!_sig.drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();};
+  const end=()=>{_sig.drawing=false;};
+  cv.onmousedown=start;cv.onmousemove=move;window.onmouseup=end;
+  cv.ontouchstart=start;cv.ontouchmove=move;cv.ontouchend=end;
+  if(existing){ const img=new Image(); img.onload=()=>ctx.drawImage(img,0,0,cv.width,cv.height); img.src=existing; _sig.empty=false; }
+}
+function clearSig(){ if(_sig.ctx){ _sig.ctx.clearRect(0,0,_sig.cv.width,_sig.cv.height); _sig.empty=true; } }
+function sigGet(existing){ if(_sig.cv && !_sig.empty) return _sig.cv.toDataURL("image/png"); return existing||null; }
+
 // ===== FIM DA FASE 1 =====
 function renderFaseEnd(){
   const pend=pendFase(1);
@@ -377,14 +403,21 @@ function renderFaseEnd(){
       <p class="small">A Fase 1 cobre os pontos 1.1 a 6.2 (montagem e pré-testes). A Fase 2 (6.3 a 7.5) é a fase de testes finais e aprovação.</p>
     </div>
     ${pend.length?`<div class="card">${pend.map(p=>`<div class="pending" onclick="irPonto('${p.c}')">⚠️ <b>${p.c}</b> · ${esc(p.t)}</div>`).join("")}</div>`:''}
+    <div class="card">
+      <label class="fld">Responsável pela Fase 1</label>
+      <input id="f_userF1" value="${esc(cur.utilizadorF1||cur.inspetor||'')}" placeholder="Nome de quem valida a Fase 1">
+      ${sigBlock("sigF1", cur.assinaturaF1, "Assinatura da Fase 1 (assine no ecrã)")}
+    </div>
     <div class="grid">
       <button class="btn primary wide" onclick="continuarFase2()">Continuar para a Fase 2 ›</button>
       <button class="btn ghost wide" onclick="guardarSair()">Guardar e sair (retomar depois)</button>
     </div>
     ${pend.length?'<p class="small" style="text-align:center">Pode avançar, mas o relatório final só é emitido com todos os pontos obrigatórios validados.</p>':''}`;
+  initSig("sigF1", cur.assinaturaF1);
 }
-function continuarFase2(){ if(!cur.fase1Fim) { cur.fase1Fim=Date.now(); save(); } idx=FASE1_LAST+1; go("checklist"); }
-function guardarSair(){ if(!cur.fase1Fim && pendFase(1).length===0){ cur.fase1Fim=Date.now(); } save(); toast("Progresso guardado.","ok"); go("home"); }
+function guardarFase1(){ const u=val("f_userF1"); if(u)cur.utilizadorF1=u; cur.assinaturaF1=sigGet(cur.assinaturaF1); if(!cur.fase1Fim && pendFase(1).length===0) cur.fase1Fim=Date.now(); save(); }
+function continuarFase2(){ guardarFase1(); idx=FASE1_LAST+1; go("checklist"); }
+function guardarSair(){ guardarFase1(); toast("Progresso guardado.","ok"); go("home"); }
 function irPonto(c){ idx=PONTOS.findIndex(p=>p.c===c); go("checklist"); }
 
 // ===== RESUMO =====
@@ -404,22 +437,24 @@ function renderResumo(){
     ${k.P>0?'<p class="small" style="text-align:center">Conclua os pontos obrigatórios em falta para emitir o relatório.</p>':''}`;
 }
 
-// ===== CONCLUSÃO (utilizador) =====
+// ===== CONCLUSÃO (utilizador + assinatura Fase 2) =====
 function renderAssinatura(){
   main.innerHTML=`
-    <h1>Conclusão</h1>
+    <h1>Conclusão — Fase 2</h1>
     <div class="card">
-      <p class="small">Reveja e confirme o utilizador responsável antes de gerar o relatório.</p>
-      <label class="fld">Utilizador <span class="req">*</span></label>
+      <p class="small">Reveja e confirme o responsável e assine a Fase 2 antes de gerar o relatório.</p>
+      <label class="fld">Responsável / assinante <span class="req">*</span></label>
       <input id="f_user" value="${esc(cur.utilizador||cur.inspetor||'')}" placeholder="Nome do utilizador">
+      ${sigBlock("sigF2", cur.assinaturaF2, "Assinatura da Fase 2 (assine no ecrã)")}
       <p class="small" style="margin-top:8px">Inspeção ${cur.id} · Documento ${esc(cur.doc||'')} · ${DOC_FULL}</p>
     </div>
     <button class="btn primary wide" onclick="concluir()">Concluir inspeção e gerar relatório ›</button>`;
+  initSig("sigF2", cur.assinaturaF2);
 }
 function concluir(){
   const k=counts(); if(k.P>0){ toast("Ainda há pontos obrigatórios por validar.","err"); go("resumo"); return; }
-  const u=val("f_user"); if(!u){ toast("Indique o utilizador.","err"); return; }
-  cur.utilizador=u; cur.fim=Date.now(); if(!cur.fase1Fim)cur.fase1Fim=cur.fim; cur.estado="Concluída";
+  const u=val("f_user"); if(!u){ toast("Indique o responsável.","err"); return; }
+  cur.utilizador=u; cur.assinaturaF2=sigGet(cur.assinaturaF2); cur.fim=Date.now(); if(!cur.fase1Fim)cur.fase1Fim=cur.fim; cur.estado="Concluída";
   cur.resultadoGlobal=(k.NC>0)?"Não conforme":"Conforme"; cur.totalC=k.C; cur.totalNC=k.NC; cur.totalNA=k.NA;
   save(); toast("Inspeção concluída.","ok"); go("relatorio");
 }
@@ -459,9 +494,21 @@ function renderRelatorio(){
       <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(2)}</tbody></table>
       ${ncs.length?`<h2>Não conformidades (${ncs.length})</h2><table><thead><tr><th>Ponto</th><th>Descrição</th><th>Observação</th></tr></thead><tbody>${ncs.map(p=>`<tr><td>${p.c}</td><td>${esc(p.t)}</td><td>${esc((cur.respostas[p.c].obs)||"")}</td></tr>`).join("")}</tbody></table>`:''}
       ${fotos.length?`<h2>Evidências — fotos e documentos (${fotos.length})</h2><div style="display:flex;flex-wrap:wrap;gap:8px">${fotos.map(o=>`<figure style="margin:0;width:150px">${o.f.img?`<img src="${o.f.d}" style="width:150px;height:110px;object-fit:cover;border:1px solid #ccc;border-radius:6px">`:`<a href="${o.f.d}" download="${esc(o.f.n)}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:150px;height:110px;border:1px solid #ccc;border-radius:6px;background:#eef2f8;color:#1F3864;text-decoration:none;font-size:12px;text-align:center;padding:6px">📄<span style="margin-top:4px;word-break:break-all">${esc(shortName(o.f.n))}</span></a>`}<figcaption class="small">${o.c}</figcaption></figure>`).join("")}</div>`:''}
+      <h2>Assinaturas</h2>
+      <div style="display:flex;gap:40px;flex-wrap:wrap">
+        <div>
+          <div class="small">Fase 1 — ${esc(cur.utilizadorF1||cur.inspetor)}</div>
+          ${cur.assinaturaF1?`<img class="sig-img" src="${cur.assinaturaF1}">`:'<div class="sig-img"></div>'}
+          <div class="small">${fmt(cur.fase1Fim)}</div>
+        </div>
+        <div>
+          <div class="small">Fase 2 — ${esc(cur.utilizador||cur.inspetor)}</div>
+          ${cur.assinaturaF2?`<img class="sig-img" src="${cur.assinaturaF2}">`:'<div class="sig-img"></div>'}
+          <div class="small">${fmt(cur.fim)}</div>
+        </div>
+      </div>
       <h2>Registo</h2>
       <div class="kv">
-        <div class="k">Utilizador</div><div><b>${esc(cur.utilizador||cur.inspetor)}</b></div>
         <div class="k">Inspetor responsável</div><div>${esc(cur.inspetor)}</div>
         <div class="k">Início</div><div>${fmt(cur.inicio)}</div>
         <div class="k">Fim da Fase 1</div><div>${fmt(cur.fase1Fim)}</div>
@@ -537,12 +584,18 @@ async function hydrate(insp){
 }
 async function apagarNuvem(id){ if(cloudReady&&FBuser){ try{ await FBdb.collection("inspecoes").doc(id).delete(); }catch(e){} } }
 // login / conta
-function entrar(){ const em=val("f_em"),pw=val("f_pw"); if(!em||!pw){toast("Preencha email e palavra-passe.","err");return;}
+function cloudReadyCheck(){
+  if(location.protocol==="file:"){ toast("Abre a app por http(s) ou localhost — não por ficheiro. Em file:// o login do Firebase não funciona.","err"); return false; }
+  if(typeof firebase==="undefined"){ toast("SDK do Firebase não carregou (sem internet na 1.ª vez?).","err"); return false; }
+  if(!cloudReady||!FBauth){ toast("A nuvem ainda não ligou. Verifica o firebase-config.js.","err"); return false; }
+  return true;
+}
+function entrar(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"); if(!em||!pw){toast("Preencha email e palavra-passe.","err");return;}
   FBauth.signInWithEmailAndPassword(em,pw).then(()=>{toast("Sessão iniciada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
-function criarConta(){ const em=val("f_em"),pw=val("f_pw"); if(!em||pw.length<6){toast("Email válido e palavra-passe (mín. 6).","err");return;}
+function criarConta(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"); if(!em||pw.length<6){toast("Email válido e palavra-passe (mín. 6).","err");return;}
   FBauth.createUserWithEmailAndPassword(em,pw).then(()=>{toast("Conta criada e ligada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
 function sair(){ FBauth.signOut().then(()=>{toast("Sessão terminada.","ok");go("sync");}); }
-function trad(e){ const m={"auth/invalid-email":"Email inválido.","auth/user-not-found":"Utilizador não encontrado.","auth/wrong-password":"Palavra-passe errada.","auth/email-already-in-use":"Este email já tem conta.","auth/weak-password":"Palavra-passe fraca (mín. 6).","auth/invalid-credential":"Credenciais inválidas."}; return m[e&&e.code]||("Erro: "+(e&&e.message||e)); }
+function trad(e){ const c=e&&e.code; const m={"auth/invalid-email":"Email inválido.","auth/user-not-found":"Utilizador não encontrado.","auth/wrong-password":"Palavra-passe errada.","auth/email-already-in-use":"Este email já tem conta — use «Entrar».","auth/weak-password":"Palavra-passe fraca (mín. 6).","auth/invalid-credential":"Credenciais inválidas.","auth/operation-not-allowed":"Falta ativar Email/palavra-passe no Firebase (Authentication).","auth/unauthorized-domain":"Domínio não autorizado no Firebase (Authentication → Definições → Domínios autorizados).","auth/network-request-failed":"Sem ligação à internet."}; return m[c]||("Erro: "+(c||(e&&e.message)||e)); }
 
 function renderSync(){
   view="sync"; btnBack.style.display="inline-block";
@@ -553,9 +606,14 @@ function renderSync(){
       <button class="btn ghost wide" onclick="go('home')">‹ Voltar</button>`; return;
   }
   if(!FBuser){
+    const diag = location.protocol==="file:" ? '⚠️ Abriste por ficheiro (file://). O login só funciona por http(s)/localhost.'
+              : (typeof firebase==="undefined") ? '⚠️ SDK do Firebase não carregou (sem internet?).'
+              : (!cloudReady||!FBauth) ? '⚠️ Nuvem não ligada — verifica o firebase-config.js.'
+              : '✅ Nuvem ligada. Podes entrar ou criar conta.';
     main.innerHTML=`<h1>Entrar</h1>
       <div class="card grid">
         <p class="small">Entra com a mesma conta no PC e no telemóvel para veres e editares os mesmos relatórios.</p>
+        <p class="small" style="font-weight:700">${diag}</p>
         <div><label class="fld">Email</label><input id="f_em" type="email" autocomplete="username"></div>
         <div><label class="fld">Palavra-passe</label><input id="f_pw" type="password" autocomplete="current-password"></div>
         <div class="row"><button class="btn primary" onclick="entrar()">Entrar</button><button class="btn ghost" onclick="criarConta()">Criar conta</button></div>
