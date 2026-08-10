@@ -328,6 +328,10 @@ function renderChecklist(){
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="progress-meta"><span>Fase ${p.fase} · Ponto ${localNo} de ${total}</span><span>${pct}% · ${done} concluídos</span></div>
     </div>
+    <div style="margin-bottom:10px">
+      <label class="fld">Ir para ponto</label>
+      <select id="navSel" onchange="navTo(this.value)">${navOptions()}</select>
+    </div>
     <div class="card">
       <span class="sec-tag">${esc(p.s)}</span>
       <div><b>${p.c}</b> · <b>${esc(p.t)}</b></div>
@@ -365,6 +369,16 @@ function addFoto(e){ const f=e.target.files[0]; if(!f)return; const isImg=(f.typ
   rd.readAsDataURL(f); }
 function resizeImg(dataUrl,maxW,cb){ const img=new Image(); img.onload=()=>{ let w=img.width,h=img.height; if(w>maxW){h=h*maxW/w;w=maxW;} const cv=document.createElement("canvas"); cv.width=w;cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); cb(cv.toDataURL("image/jpeg",0.7)); }; img.onerror=()=>cb(dataUrl); img.src=dataUrl; }
 function delFoto(i){ const p=PONTOS[idx]; cur.respostas[p.c].fotos.splice(i,1); persist(); renderChecklist(); }
+function navOptions(){
+  const cc=PONTOS[idx].c; let sec=null, html="";
+  PONTOS.forEach(p=>{
+    if(p.s!==sec){ if(sec!==null)html+="</optgroup>"; html+=`<optgroup label="Fase ${p.fase} · ${esc(p.s)}">`; sec=p.s; }
+    const r=cur.respostas[p.c]||{}; const mark=r.concluido?"✓ ":(r.resultado==="NC"?"⚠ ":(r.resultado==="NA"?"– ":"○ "));
+    html+=`<option value="${p.c}"${p.c===cc?" selected":""}>${mark}${p.c} · ${esc(p.t)}</option>`;
+  });
+  return html+"</optgroup>";
+}
+function navTo(c){ persist(isValid(PONTOS[idx],resp())); idx=PONTOS.findIndex(p=>p.c===c); go("checklist"); }
 function next(){ const p=PONTOS[idx]; persist(isValid(p,resp())); if(idx===FASE1_LAST){ go("faseend"); return; } if(idx<N-1){ idx++; go("checklist"); } }
 function prev(){ persist(); if(idx>0){ idx--; go("checklist"); } }
 function irResumo(){ persist(isValid(PONTOS[idx],resp())); go("resumo"); }

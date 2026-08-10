@@ -1,4 +1,4 @@
-const CACHE = "qc-mod105-v06";
+const CACHE = "qc-mod105-v07";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./firebase-config.js"];
 
 self.addEventListener("install", e => {
