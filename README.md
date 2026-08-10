@@ -38,6 +38,10 @@ relatórios em qualquer dispositivo, ativa o Firebase (gratuito):
          allow read, write: if request.auth != null;
          match /anexos/{aid} { allow read, write: if request.auth != null; }
        }
+       match /config/{doc} {
+         allow read: if request.auth != null;   // lista de administradores
+         allow write: if false;                 // editar só na consola
+       }
      }
    }
    ```
@@ -47,8 +51,20 @@ relatórios em qualquer dispositivo, ativa o Firebase (gratuito):
    automaticamente (e funcionam offline, enviando quando houver ligação).
 
 > Todos os que entrarem com uma conta do teu projeto veem e editam os mesmos
-> relatórios (ideal para uma equipa). Sem configurar o Firebase, a app continua
-> a funcionar normalmente, só que local a cada dispositivo.
+> relatórios (ideal para uma equipa). Com o Firebase configurado, a app **exige
+> login** para entrar (funciona offline depois do 1.º início de sessão).
+
+## Administradores (quem pode limpar a base de dados)
+A opção **«Limpar base de dados»** só aparece para administradores. Os
+administradores são definidos **diretamente na base de dados** (não na app):
+
+1. Consola Firebase → **Firestore Database** → **Iniciar coleção** → ID da coleção: `config`.
+2. Cria um documento com ID `app`.
+3. Adiciona um campo chamado `admins` do tipo **array**, e coloca os **emails**
+   dos administradores (um por elemento), por ex.: `goncalo.melo.goncalves@gmail.com`.
+4. Guarda. Esses utilizadores, ao entrarem, passam a ver a opção de limpar a base de dados.
+
+Para adicionar/remover administradores mais tarde, é só editar esse array na consola.
 
 ## Usar no PC
 - Rápido: duplo-clique no `index.html` — abre no navegador e funciona.

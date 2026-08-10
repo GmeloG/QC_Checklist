@@ -106,12 +106,41 @@ textarea{min-height:80px;resize:vertical;}
 .rep .kv div.k{color:var(--muted);font-weight:600;}
 .badge-res{font-weight:800;}
 .res-C{color:var(--ok);} .res-NC{color:var(--nc);} .res-NA{color:var(--na);}
+/* ===== refinamento visual (premium, leve) ===== */
+body{background:#eaeef4;}
+header{background:linear-gradient(135deg,#1B325A 0%,#2E74B5 100%);box-shadow:0 2px 12px rgba(20,40,80,.18);}
+.hdr-logo{width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;color:#1F3864;font-size:14px;letter-spacing:.5px;box-shadow:0 1px 4px rgba(0,0,0,.25);flex:0 0 36px;}
+h1{letter-spacing:-.3px;font-weight:800;}
+.card{border-radius:16px;box-shadow:0 4px 16px rgba(20,40,80,.07);border-color:#e6ebf2;}
+input,select,textarea{transition:border-color .15s, box-shadow .15s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(46,116,181,.15);}
+.btn{box-shadow:0 2px 6px rgba(20,40,80,.14);transition:transform .05s ease, filter .15s;}
+.btn:active{transform:scale(.98);}
+.btn.primary{background:linear-gradient(135deg,#1F3864,#2E74B5);}
+.btn.accent{background:linear-gradient(135deg,#2E74B5,#3B8FD6);}
+.menu-btn{transition:transform .05s ease, box-shadow .2s;align-items:center;}
+.menu-btn:active{transform:scale(.99);}
+.menu-btn .ico{width:46px;height:46px;border-radius:13px;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 46px;}
+.list-item{transition:transform .05s ease, box-shadow .15s;}
+.list-item:active{transform:scale(.995);}
+.brandmark{width:66px;height:66px;border-radius:18px;background:linear-gradient(135deg,#1F3864,#2E74B5);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;margin:0 auto 14px;box-shadow:0 8px 22px rgba(31,56,100,.30);letter-spacing:1px;}
+.auth-wrap{max-width:380px;margin:6vh auto 0;text-align:center;}
+.auth-wrap .card{text-align:left;}
+.foot{ text-align:center;color:#9aa6b6;font-size:11px;margin:18px 0 6px;}
+.ov-hero{background:linear-gradient(135deg,#1F3864,#2E74B5);color:#fff;border:none;}
+.ov-hero .ov-doc{font-size:22px;font-weight:800;letter-spacing:-.3px;line-height:1.15;}
+.ov-hero .ov-sub{opacity:.92;font-size:14px;margin-top:3px;}
+.ov-hero .ov-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+.ov-hero .ov-meta .small{color:#dbe6f6;}
+.ov-hero .pill{background:rgba(255,255,255,.22);color:#fff;}
+.ov-sec-title{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 2px 8px;}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
     <button class="back no-print" id="btnBack" style="display:none">‹ Voltar</button>
+    <div class="hdr-logo">QC</div>
     <div>
       <div class="brand">Sidel</div>
       <div class="sub">Controlo de Qualidade · Quadros Elétricos</div>
@@ -186,7 +215,7 @@ const FASE1_LAST=FASE1.length-1; // último índice da Fase 1
 
 // ===== Estado / persistência =====
 const LS="qc_inspecoes_v2";
-let DB=load(), cur=null, idx=0, view="home";
+let DB=load(), cur=null, idx=0, view="home", curSec=null;
 function load(){ try{return JSON.parse(localStorage.getItem(LS))||[]}catch(e){return[]} }
 function save(){ try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){toast("Armazenamento cheio (fotos grandes).","err");} if(typeof scheduleCloud==="function") scheduleCloud(); }
 function uid(){ return "INS-"+new Date().getFullYear()+"-"+String(DB.length+1).padStart(4,"0"); }
@@ -195,28 +224,60 @@ function esc(s){ return (s||"").replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">"
 function toast(m,t){ const e=document.getElementById("toast"); e.className="toast show "+(t||""); e.textContent=m; setTimeout(()=>e.className="toast",2300); }
 
 const main=document.getElementById("main"), btnBack=document.getElementById("btnBack"), hdrRight=document.getElementById("hdrRight");
-btnBack.onclick=()=>{ if(["checklist","resumo","assinatura","relatorio","faseend"].includes(view)){ if(confirm("Sair da inspeção? O progresso fica guardado.")) go("home"); } else go("home"); };
+btnBack.onclick=()=>{
+  if(view==="checklist") return go(curSec?"seccao":"overview");
+  if(["faseend","resumo","assinatura","seccao"].includes(view)) return go("overview");
+  if(view==="relatorio") return go(cur&&cur.estado==="Em curso"?"overview":"lista");
+  go("home");
+};
 function go(v){ view=v; window.scrollTo(0,0); render(); }
 
 function render(){
-  btnBack.style.display=(view==="home")?"none":"inline-block";
   hdrRight.innerHTML = (cur?cur.id+"<br>":"") + DOC_FULL;
-  ({home:renderHome,nova:renderNova,lista:renderLista,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync}[view]||renderHome)();
+  // BARREIRA DE LOGIN: com a nuvem configurada, só entra autenticado
+  if(cfgValid()){
+    if(!authResolved) { btnBack.style.display="none"; return renderLoading(); }
+    if(!FBuser) { btnBack.style.display="none"; return renderLogin(); }
+  }
+  btnBack.style.display=(view==="home")?"none":"inline-block";
+  ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync}[view]||renderHome)();
+}
+function renderLoading(){
+  main.innerHTML=`<div class="auth-wrap"><div class="brandmark">QC</div><h1>A ligar…</h1><p class="small">A verificar a sua sessão.</p></div>`;
+}
+function renderLogin(){
+  const diag = (typeof firebase==="undefined") ? '⚠️ Sem ligação à internet. É necessária ligação para iniciar sessão da primeira vez.'
+            : (!cloudReady||!FBauth) ? '⚠️ A ligar à conta…' : '';
+  main.innerHTML=`<div class="auth-wrap">
+    <div class="brandmark">QC</div>
+    <h1 style="text-align:center">Controlo de Qualidade</h1>
+    <p class="small" style="text-align:center;margin-bottom:14px">Inicie sessão para aceder às inspeções.</p>
+    <div class="card">
+      ${diag?`<p class="small" style="font-weight:700">${diag}</p>`:''}
+      <label class="fld">Email</label><input id="f_em" type="email" autocomplete="username" inputmode="email">
+      <label class="fld" style="margin-top:8px">Palavra-passe</label><input id="f_pw" type="password" autocomplete="current-password">
+      <button class="btn primary wide" style="margin-top:14px" onclick="entrar()">Entrar</button>
+      <button class="btn ghost wide" style="margin-top:8px" onclick="criarConta()">Criar conta</button>
+    </div>
+    <div class="foot">${DOC_FULL}</div>
+  </div>`;
 }
 
 // ===== HOME =====
 function renderHome(){
   const emCurso=DB.filter(i=>i.estado==="Em curso").length, concl=DB.filter(i=>i.estado!=="Em curso").length;
+  const conta = FBuser ? ("Ligado como "+FBuser.email+(isAdmin?" · Administrador":"")) : syncStatus();
   main.innerHTML=`
     <h1>Menu</h1>
     <div class="grid">
       <button class="menu-btn" onclick="novaInspecao()"><span class="ico">＋</span><span>Nova inspeção<small>Iniciar uma nova validação de quadro</small></span></button>
       <button class="menu-btn" onclick="go('lista')"><span class="ico">📋</span><span>Inspeções e relatórios<small>${emCurso} em curso · ${concl} concluídas · abrir para editar</small></span></button>
-      <button class="menu-btn" onclick="clearDB()" style="color:var(--nc)"><span class="ico">🗑️</span><span>Limpar base de dados<small>Apagar todos os relatórios guardados</small></span></button>
-      <button class="menu-btn" onclick="go('sync')"><span class="ico">☁️</span><span>Sincronização<small>${syncStatus()}</small></span></button>
+      <button class="menu-btn" onclick="go('sync')"><span class="ico">👤</span><span>Conta<small>${esc(conta)}</small></span></button>
+      ${isAdmin?`<button class="menu-btn" onclick="clearDB()" style="color:var(--nc)"><span class="ico">🗑️</span><span>Limpar base de dados<small>Apagar todos os relatórios (admin)</small></span></button>`:''}
       <button class="menu-btn" onclick="sobre()"><span class="ico">ℹ️</span><span>Sobre / versão<small>${DOC_FULL} · histórico de revisões</small></span></button>
     </div>
-    <p class="small" style="margin-top:16px">Checklist «${DOC_FULL}» · ${N} pontos · Fase 1 (1.1–6.2) e Fase 2 (6.3–7.5).</p>`;
+    <p class="small" style="margin-top:16px">Checklist «${DOC_FULL}» · ${N} pontos · Fase 1 (1.1–6.2) e Fase 2 (6.3–7.5).</p>
+    <div class="foot">${DOC_FULL}</div>`;
 }
 function sobre(){
   main.innerHTML=`<h1>Sobre</h1>
@@ -231,7 +292,17 @@ function sobre(){
   view="sobre"; btnBack.style.display="inline-block";
 }
 function novaInspecao(){ cur=null; go("nova"); }
-function clearDB(){ if(confirm("Isto apaga TODOS os relatórios/inspeções guardados neste dispositivo. Esta ação é irreversível. Continuar?")){ DB=[]; cur=null; save(); toast("Base de dados limpa.","ok"); go("home"); } }
+function clearDB(){
+  if(!isAdmin){ toast("Apenas administradores podem limpar a base de dados.","err"); return; }
+  if(!confirm("ADMINISTRADOR: apagar TODOS os relatórios (neste dispositivo e na nuvem)? Ação irreversível.")) return;
+  limparTudo();
+}
+async function limparTudo(){
+  const ids=DB.map(i=>i.id); DB=[]; cur=null;
+  try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){}
+  toast("A limpar…","ok"); go("home");
+  if(cloudReady&&FBuser){ for(const id of ids){ try{ await FBdb.collection("inspecoes").doc(id).delete(); }catch(e){} } toast("Base de dados limpa.","ok"); if(view==="home")render(); }
+}
 function editarInspecao(){ if(!cur)return; cur.estado="Em curso"; save(); idx=0; toast("Modo de edição — pode alterar as respostas.","ok"); go("checklist"); }
 function apagarInspecao(id,ev){ if(ev)ev.stopPropagation(); if(confirm("Apagar este relatório?")){ DB=DB.filter(i=>i.id!==id); save(); if(typeof apagarNuvem==="function") apagarNuvem(id); if(cur&&cur.id===id)cur=null; toast("Relatório apagado.","ok"); go("lista"); } }
 
@@ -256,7 +327,7 @@ function criarInspecao(){
   cur={ id:uid(), doc:d, serie:val("f_serie"), projeto:val("f_proj"), cliente:val("f_cli"), local:val("f_loc"),
         inspetor:insp, docCode:DOC_FULL, inicio:Date.now(), fase1Fim:null, fim:null, estado:"Em curso",
         respostas:{}, utilizador:"" };
-  DB.push(cur); save(); idx=0; go("checklist"); toast("Inspeção "+cur.id+" criada.","ok");
+  DB.push(cur); save(); idx=0; go("overview"); toast("Inspeção "+cur.id+" criada.","ok");
 }
 
 // ===== LISTA =====
@@ -271,8 +342,68 @@ function renderLista(){
     </div>`).join("");
 }
 function faseDe(i){ for(const p of PONTOS){ const r=i.respostas[p.c]; if(!r||!r.concluido) return p.fase; } return 2; }
-function abrir(id){ cur=DB.find(i=>i.id===id); if(typeof hydrate==="function") hydrate(cur); if(cur.estado==="Em curso"){ idx=firstPending(); go("checklist"); } else go("relatorio"); }
+function abrir(id){ cur=DB.find(i=>i.id===id); if(typeof hydrate==="function") hydrate(cur); if(cur.estado==="Em curso") go("overview"); else go("relatorio"); }
 function firstPending(){ for(let k=0;k<N;k++){ const r=cur.respostas[PONTOS[k].c]; if(!r||!r.concluido) return k; } return N-1; }
+
+// ===== VISÃO GERAL DA INSPEÇÃO =====
+function secInfo(){
+  const map=[];
+  PONTOS.forEach((p,i)=>{ let e=map.find(x=>x.s===p.s); if(!e){ e={s:p.s,fase:p.fase,total:0,done:0,nc:0,firstIdx:i}; map.push(e); }
+    e.total++; const r=cur.respostas[p.c]||{}; if(r.concluido)e.done++; if(r.resultado==="NC")e.nc++; });
+  return map;
+}
+function renderOverview(){
+  view="overview"; btnBack.style.display="inline-block";
+  const secs=secInfo();
+  const done=PONTOS.filter(p=>{const r=cur.respostas[p.c];return r&&r.concluido;}).length;
+  const fp=firstPending();
+  const row=e=>`<div class="list-item" onclick="abrirSeccao('${e.s.replace(/'/g,"\\'")}')">
+      <div class="t"><div><b>${esc(e.s)}</b></div>
+        <div class="code">${e.done}/${e.total} concluídos${e.nc?` · <span style="color:var(--nc)">${e.nc} NC</span>`:''}</div>
+        <div class="progress-bar" style="margin-top:6px;height:8px"><div class="progress-fill" style="width:${Math.round(e.done/e.total*100)}%"></div></div>
+      </div><span style="color:var(--accent);font-size:20px">›</span></div>`;
+  const grupo=f=>secs.filter(e=>e.fase===f).map(row).join("");
+  main.innerHTML=`
+    <div class="card ov-hero">
+      <div class="ov-doc">${esc(cur.doc||cur.id)}</div>
+      <div class="ov-sub">${esc(cur.cliente||'—')}${cur.projeto?' · '+esc(cur.projeto):''}</div>
+      <div class="ov-meta">
+        <span class="pill">Fase ${faseDe(cur)}</span>
+        <span class="small">👤 ${esc(cur.inspetor)}</span>
+        <span class="small">${cur.id}</span>
+      </div>
+    </div>
+    <button class="btn primary wide" onclick="curSec=null;idx=${fp};go('checklist')">${done? 'Continuar de onde parei ›':'Começar a inspeção ›'}</button>
+    <div class="ov-sec-title">Fase 1 · Montagem e pré-testes</div>
+    ${grupo(1)}
+    <div class="ov-sec-title">Fase 2 · Testes finais e aprovação</div>
+    ${grupo(2)}
+    <div style="margin-top:12px">
+      ${done? `<button class="btn ghost wide" onclick="go('resumo')">Ver resumo / concluir ›</button>`:''}
+    </div>
+    <p class="small" style="margin-top:8px;text-align:center">Toca numa secção para ver e escolher os pontos.</p>`;
+}
+function abrirSeccao(s){ curSec=s; go("seccao"); }
+function renderSeccao(){
+  view="seccao"; btnBack.style.display="inline-block";
+  const pts=[]; PONTOS.forEach((p,i)=>{ if(p.s===curSec) pts.push({p,i}); });
+  const fase=pts.length?pts[0].p.fase:1;
+  const row=o=>{ const r=cur.respostas[o.p.c]||{};
+    const mark=r.concluido?'<span style="color:var(--ok)">✓</span>':(r.resultado==="NC"?'<span style="color:var(--nc)">⚠</span>':(r.resultado==="NA"?'<span style="color:var(--na)">–</span>':'<span style="color:#c3ccd8">○</span>'));
+    return `<div class="list-item" onclick="curSec='${(o.p.s).replace(/'/g,"\\'")}';idx=${o.i};go('checklist')">
+      <div style="font-size:18px;width:22px;text-align:center">${mark}</div>
+      <div class="t"><div><b>${o.p.c}</b> · ${esc(o.p.t)}</div></div>
+      <span style="color:var(--accent);font-size:20px">›</span></div>`;
+  };
+  main.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span class="fase-badge ${fase===2?'f2':''}">FASE ${fase}</span>
+    </div>
+    <h1>${esc(curSec)}</h1>
+    <p class="small" style="margin-top:-6px;margin-bottom:10px">Selecione um ponto para verificar.</p>
+    ${pts.map(row).join("")}
+    <button class="btn ghost wide" style="margin-top:12px" onclick="go('overview')">‹ Voltar às secções</button>`;
+}
 
 // ===== CHECKLIST =====
 function resp(){ return cur.respostas[PONTOS[idx].c]||{}; }
@@ -328,10 +459,6 @@ function renderChecklist(){
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="progress-meta"><span>Fase ${p.fase} · Ponto ${localNo} de ${total}</span><span>${pct}% · ${done} concluídos</span></div>
     </div>
-    <div style="margin-bottom:10px">
-      <label class="fld">Ir para ponto</label>
-      <select id="navSel" onchange="navTo(this.value)">${navOptions()}</select>
-    </div>
     <div class="card">
       <span class="sec-tag">${esc(p.s)}</span>
       <div><b>${p.c}</b> · <b>${esc(p.t)}</b></div>
@@ -369,16 +496,6 @@ function addFoto(e){ const f=e.target.files[0]; if(!f)return; const isImg=(f.typ
   rd.readAsDataURL(f); }
 function resizeImg(dataUrl,maxW,cb){ const img=new Image(); img.onload=()=>{ let w=img.width,h=img.height; if(w>maxW){h=h*maxW/w;w=maxW;} const cv=document.createElement("canvas"); cv.width=w;cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); cb(cv.toDataURL("image/jpeg",0.7)); }; img.onerror=()=>cb(dataUrl); img.src=dataUrl; }
 function delFoto(i){ const p=PONTOS[idx]; cur.respostas[p.c].fotos.splice(i,1); persist(); renderChecklist(); }
-function navOptions(){
-  const cc=PONTOS[idx].c; let sec=null, html="";
-  PONTOS.forEach(p=>{
-    if(p.s!==sec){ if(sec!==null)html+="</optgroup>"; html+=`<optgroup label="Fase ${p.fase} · ${esc(p.s)}">`; sec=p.s; }
-    const r=cur.respostas[p.c]||{}; const mark=r.concluido?"✓ ":(r.resultado==="NC"?"⚠ ":(r.resultado==="NA"?"– ":"○ "));
-    html+=`<option value="${p.c}"${p.c===cc?" selected":""}>${mark}${p.c} · ${esc(p.t)}</option>`;
-  });
-  return html+"</optgroup>";
-}
-function navTo(c){ persist(isValid(PONTOS[idx],resp())); idx=PONTOS.findIndex(p=>p.c===c); go("checklist"); }
 function next(){ const p=PONTOS[idx]; persist(isValid(p,resp())); if(idx===FASE1_LAST){ go("faseend"); return; } if(idx<N-1){ idx++; go("checklist"); } }
 function prev(){ persist(); if(idx>0){ idx--; go("checklist"); } }
 function irResumo(){ persist(isValid(PONTOS[idx],resp())); go("resumo"); }
@@ -534,6 +651,7 @@ function renderRelatorio(){
 
 // ================== SINCRONIZAÇÃO (Firebase) ==================
 let FBauth=null, FBdb=null, FBuser=null, cloudReady=false, unsub=null, cloudTimer=null;
+let authResolved=false, isAdmin=false, ADMINS=[];
 const uploadedAtt=new Set();
 function cfgValid(){ const c=window.FIREBASE_CONFIG; return !!(c && c.apiKey && String(c.apiKey).indexOf("COLA_AQUI")<0 && c.projectId); }
 function syncStatus(){
@@ -543,14 +661,23 @@ function syncStatus(){
   return "Configurado · toque para entrar";
 }
 function initSync(){
-  if(!cfgValid() || typeof firebase==="undefined") return;
+  if(!cfgValid()){ authResolved=true; return; }        // sem nuvem: modo local
+  if(typeof firebase==="undefined"){ authResolved=true; render(); return; } // SDK não carregou (offline 1.ª vez)
   try{
     firebase.initializeApp(window.FIREBASE_CONFIG);
     FBauth=firebase.auth(); FBdb=firebase.firestore();
     FBdb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
     cloudReady=true;
-    FBauth.onAuthStateChanged(u=>{ FBuser=u; if(u) subscribe(); else if(unsub){unsub();unsub=null;} if(["home","sync"].includes(view)) render(); });
-  }catch(e){ cloudReady=false; }
+    FBauth.onAuthStateChanged(u=>{ FBuser=u; authResolved=true; isAdmin=false; if(u){ subscribe(); loadAdmins(); } else if(unsub){unsub();unsub=null;} render(); });
+  }catch(e){ cloudReady=false; authResolved=true; render(); }
+}
+function loadAdmins(){
+  if(!cloudReady||!FBuser) return;
+  FBdb.collection("config").doc("app").get().then(d=>{
+    const data=(d&&d.exists)?d.data():{}; ADMINS=(data.admins||[]).map(x=>String(x).toLowerCase());
+    isAdmin=ADMINS.includes((FBuser.email||"").toLowerCase());
+    if(view==="home"||view==="sync") render();
+  }).catch(()=>{ isAdmin=false; });
 }
 function subscribe(){
   if(unsub)unsub();
@@ -634,11 +761,12 @@ function renderSync(){
       </div>
       <button class="btn ghost wide" onclick="go('home')">‹ Voltar</button>`; return;
   }
-  main.innerHTML=`<h1>Sincronização</h1>
+  main.innerHTML=`<h1>Conta</h1>
     <div class="card">
       <p>✅ <b>Ligado</b> como ${esc(FBuser.email)}</p>
+      <p class="small">Perfil: <b>${isAdmin?"Administrador":"Inspetor"}</b></p>
       <p class="small">Os relatórios sincronizam automaticamente entre os teus dispositivos. Funciona offline e envia quando houver ligação.</p>
-      <p class="small">Inspeções na base local: ${DB.length}</p>
+      <p class="small">Inspeções na base: ${DB.length}</p>
     </div>
     <button class="btn ghost wide" onclick="sair()">Terminar sessão</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">‹ Voltar</button>`;
