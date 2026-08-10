@@ -134,13 +134,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .ov-hero .ov-meta .small{color:#dbe6f6;}
 .ov-hero .pill{background:rgba(255,255,255,.22);color:#fff;}
 .ov-sec-title{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 2px 8px;}
+.hdr-logo img{width:100%;height:100%;object-fit:contain;padding:4px;}
+.brandmark{background:#fff !important;padding:12px;}
+.brandmark img{width:100%;height:100%;object-fit:contain;}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
     <button class="back no-print" id="btnBack" style="display:none">‹ Voltar</button>
-    <div class="hdr-logo">QC</div>
+    <div class="hdr-logo"><img src="logo.png" alt="Sidel"></div>
     <div>
       <div class="brand">Sidel</div>
       <div class="sub">Controlo de Qualidade · Quadros Elétricos</div>
@@ -237,19 +240,19 @@ function render(){
   // BARREIRA DE LOGIN: com a nuvem configurada, só entra autenticado
   if(cfgValid()){
     if(!authResolved) { btnBack.style.display="none"; return renderLoading(); }
-    if(!FBuser) { btnBack.style.display="none"; return renderLogin(); }
+    if(!FBuser) { btnBack.style.display="none"; return (view==="registo"?renderRegisto():renderLogin()); }
   }
   btnBack.style.display=(view==="home")?"none":"inline-block";
-  ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync}[view]||renderHome)();
+  ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync,mudarpw:renderMudarPw}[view]||renderHome)();
 }
 function renderLoading(){
-  main.innerHTML=`<div class="auth-wrap"><div class="brandmark">QC</div><h1>A ligar…</h1><p class="small">A verificar a sua sessão.</p></div>`;
+  main.innerHTML=`<div class="auth-wrap"><div class="brandmark"><img src="logo.png" alt="Sidel"></div><h1>A ligar…</h1><p class="small">A verificar a sua sessão.</p></div>`;
 }
 function renderLogin(){
   const diag = (typeof firebase==="undefined") ? '⚠️ Sem ligação à internet. É necessária ligação para iniciar sessão da primeira vez.'
             : (!cloudReady||!FBauth) ? '⚠️ A ligar à conta…' : '';
   main.innerHTML=`<div class="auth-wrap">
-    <div class="brandmark">QC</div>
+    <div class="brandmark"><img src="logo.png" alt="Sidel"></div>
     <h1 style="text-align:center">Controlo de Qualidade</h1>
     <p class="small" style="text-align:center;margin-bottom:14px">Inicie sessão para aceder às inspeções.</p>
     <div class="card">
@@ -257,7 +260,22 @@ function renderLogin(){
       <label class="fld">Email</label><input id="f_em" type="email" autocomplete="username" inputmode="email">
       <label class="fld" style="margin-top:8px">Palavra-passe</label><input id="f_pw" type="password" autocomplete="current-password">
       <button class="btn primary wide" style="margin-top:14px" onclick="entrar()">Entrar</button>
-      <button class="btn ghost wide" style="margin-top:8px" onclick="criarConta()">Criar conta</button>
+      <button class="btn ghost wide" style="margin-top:8px" onclick="go('registo')">Criar conta</button>
+    </div>
+    <div class="foot">${DOC_FULL}</div>
+  </div>`;
+}
+function renderRegisto(){
+  main.innerHTML=`<div class="auth-wrap">
+    <div class="brandmark"><img src="logo.png" alt="Sidel"></div>
+    <h1 style="text-align:center">Criar conta</h1>
+    <p class="small" style="text-align:center;margin-bottom:14px">Registe-se para aceder às inspeções.</p>
+    <div class="card">
+      <label class="fld">Email</label><input id="f_em" type="email" autocomplete="username" inputmode="email">
+      <label class="fld" style="margin-top:8px">Palavra-passe (mín. 6)</label><input id="f_pw" type="password" autocomplete="new-password">
+      <label class="fld" style="margin-top:8px">Confirmar palavra-passe</label><input id="f_pw2" type="password" autocomplete="new-password">
+      <button class="btn primary wide" style="margin-top:14px" onclick="criarConta()">Criar conta</button>
+      <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">‹ Já tenho conta</button>
     </div>
     <div class="foot">${DOC_FULL}</div>
   </div>`;
@@ -733,10 +751,11 @@ function cloudReadyCheck(){
 }
 function entrar(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"); if(!em||!pw){toast("Preencha email e palavra-passe.","err");return;}
   FBauth.signInWithEmailAndPassword(em,pw).then(()=>{toast("Sessão iniciada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
-function criarConta(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"); if(!em||pw.length<6){toast("Email válido e palavra-passe (mín. 6).","err");return;}
+function criarConta(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"),pw2=val("f_pw2"); if(!em||pw.length<6){toast("Email válido e palavra-passe (mín. 6).","err");return;}
+  if(document.getElementById("f_pw2") && pw!==pw2){ toast("As palavras-passe não coincidem.","err"); return; }
   FBauth.createUserWithEmailAndPassword(em,pw).then(()=>{toast("Conta criada e ligada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
 function sair(){ FBauth.signOut().then(()=>{toast("Sessão terminada.","ok");go("sync");}); }
-function trad(e){ const c=e&&e.code; const m={"auth/invalid-email":"Email inválido.","auth/user-not-found":"Utilizador não encontrado.","auth/wrong-password":"Palavra-passe errada.","auth/email-already-in-use":"Este email já tem conta — use «Entrar».","auth/weak-password":"Palavra-passe fraca (mín. 6).","auth/invalid-credential":"Credenciais inválidas.","auth/operation-not-allowed":"Falta ativar Email/palavra-passe no Firebase (Authentication).","auth/unauthorized-domain":"Domínio não autorizado no Firebase (Authentication → Definições → Domínios autorizados).","auth/network-request-failed":"Sem ligação à internet."}; return m[c]||("Erro: "+(c||(e&&e.message)||e)); }
+function trad(e){ const c=e&&e.code; const m={"auth/invalid-email":"Email inválido.","auth/user-not-found":"Utilizador não encontrado.","auth/wrong-password":"Palavra-passe errada.","auth/email-already-in-use":"Este email já tem conta — use «Entrar».","auth/weak-password":"Palavra-passe fraca (mín. 6).","auth/invalid-credential":"Credenciais inválidas.","auth/operation-not-allowed":"Falta ativar Email/palavra-passe no Firebase (Authentication).","auth/unauthorized-domain":"Domínio não autorizado no Firebase (Authentication → Definições → Domínios autorizados).","auth/network-request-failed":"Sem ligação à internet.","auth/requires-recent-login":"Por segurança, termine sessão e volte a entrar antes de mudar a palavra-passe.","auth/too-many-requests":"Demasiadas tentativas. Tente mais tarde."}; return m[c]||("Erro: "+(c||(e&&e.message)||e)); }
 
 function renderSync(){
   view="sync"; btnBack.style.display="inline-block";
@@ -768,8 +787,46 @@ function renderSync(){
       <p class="small">Os relatórios sincronizam automaticamente entre os teus dispositivos. Funciona offline e envia quando houver ligação.</p>
       <p class="small">Inspeções na base: ${DB.length}</p>
     </div>
-    <button class="btn ghost wide" onclick="sair()">Terminar sessão</button>
+    ${isAdmin?`<div class="card">
+      <p><b>Administração</b></p>
+      <p class="small">Repor a palavra-passe de um utilizador. Ele recebe um email para definir uma nova. Ninguém vê as palavras-passe.</p>
+      <label class="fld">Email do utilizador</label><input id="f_admresetem" type="email" inputmode="email" autocomplete="off">
+      <button class="btn accent wide" style="margin-top:10px" onclick="adminResetPw()">Enviar reposição por email</button>
+    </div>`:''}
+    <button class="btn accent wide" onclick="go('mudarpw')">Mudar a minha palavra-passe</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="sair()">Terminar sessão</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">‹ Voltar</button>`;
+}
+function renderMudarPw(){
+  view="mudarpw"; btnBack.style.display="inline-block";
+  main.innerHTML=`<h1>Mudar palavra-passe</h1>
+    <div class="card">
+      <p class="small">Conta: <b>${esc(FBuser?FBuser.email:'')}</b></p>
+      <label class="fld">Palavra-passe atual</label><input id="f_pwa" type="password" autocomplete="current-password">
+      <label class="fld" style="margin-top:8px">Nova palavra-passe (mín. 6)</label><input id="f_pwn" type="password" autocomplete="new-password">
+      <label class="fld" style="margin-top:8px">Confirmar nova palavra-passe</label><input id="f_pwn2" type="password" autocomplete="new-password">
+      <button class="btn primary wide" style="margin-top:14px" onclick="mudarPw()">Guardar nova palavra-passe</button>
+    </div>
+    <button class="btn ghost wide" onclick="go('sync')">‹ Voltar</button>`;
+}
+function adminResetPw(){
+  if(!isAdmin){ toast("Apenas administradores.","err"); return; }
+  if(!cloudReadyCheck())return;
+  const em=val("f_admresetem"); if(!em){ toast("Indique o email do utilizador.","err"); return; }
+  FBauth.sendPasswordResetEmail(em)
+    .then(()=>toast("Email de reposição enviado para "+em+".","ok"))
+    .catch(e=>toast(trad(e),"err"));
+}
+function mudarPw(){
+  if(!cloudReadyCheck())return;
+  const atual=val("f_pwa"), nova=val("f_pwn"), nova2=val("f_pwn2");
+  if(!atual||nova.length<6){ toast("Preencha a atual e uma nova (mín. 6).","err"); return; }
+  if(nova!==nova2){ toast("As novas palavras-passe não coincidem.","err"); return; }
+  const cred=firebase.auth.EmailAuthProvider.credential(FBuser.email, atual);
+  FBuser.reauthenticateWithCredential(cred)
+    .then(()=>FBuser.updatePassword(nova))
+    .then(()=>{ toast("Palavra-passe alterada.","ok"); go("sync"); })
+    .catch(e=>toast(trad(e),"err"));
 }
 
 // ===== PWA =====
