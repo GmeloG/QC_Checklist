@@ -1,4 +1,4 @@
-const CACHE = "qc-configurador-v27";
+const CACHE = "qc-configurador-v28";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo.png", "./firebase-config.js"];
 const FIREBASE = [
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
