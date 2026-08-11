@@ -171,7 +171,7 @@ const T={
    ver_resumo:"Ver resumo / concluir", toca_seccao:"Toca numa secção para ver e escolher os pontos.",
    selecione_ponto:"Selecione um ponto para verificar.", voltar_seccoes:"‹ Voltar às secções",
    anterior:"‹ Anterior", seguinte:"Seguinte ›", observacoes:"Observações", fotos_docs:"Fotografias ou documentos",
-   opcional:"(opcional)", ponto:"Ponto", de:"de", concluidos:"concluídos",
+   opcional:"(opcional)", ponto:"Ponto", de:"de", concluidos:"concluídos", fase:"Fase",
    resumo:"Resumo da inspeção", conformes:"Conformes", nao_conf:"Não conf.", na:"N/A", por_validar:"Por validar",
    prosseguir:"Prosseguir para conclusão", conclusao:"Conclusão", responsavel:"Responsável / assinante",
    concluir:"Concluir inspeção e gerar relatório", entrar:"Entrar", criar_conta:"Criar conta",
@@ -188,7 +188,7 @@ const T={
    ver_resumo:"View summary / finish", toca_seccao:"Tap a section to see and pick the points.",
    selecione_ponto:"Select a point to check.", voltar_seccoes:"‹ Back to sections",
    anterior:"‹ Previous", seguinte:"Next ›", observacoes:"Notes", fotos_docs:"Photos or documents",
-   opcional:"(optional)", ponto:"Point", de:"of", concluidos:"done",
+   opcional:"(optional)", ponto:"Point", de:"of", concluidos:"done", fase:"Phase",
    resumo:"Inspection summary", conformes:"Conform", nao_conf:"Non-conf.", na:"N/A", por_validar:"Pending",
    prosseguir:"Proceed to conclusion", conclusao:"Conclusion", responsavel:"Responsible / signer",
    concluir:"Finish inspection and generate report", entrar:"Sign in", criar_conta:"Create account",
@@ -206,52 +206,53 @@ const DOC_HIST=[
 ];
 
 // ===== Checklist BASE MOD_105_IE_SMF_02 (base de todas as famílias) =====
+const SEC_EN={"1. Documentação":"1. Documentation","2. Armário & Parte Mecânica":"2. Cabinet & Mechanical","3. Componentes":"3. Components","4. Cabelagem":"4. Wiring","5. Ligação equipotencial de proteção":"5. Protective equipotential bonding","6. Testes Elétricos":"6. Electrical Tests","7. Aprovação Final":"7. Final Approval"};
 const BASE=[
- {c:"1.1",s:"1. Documentação",t:"Esquemas elétricos",cr:"Última revisão aprovada disponível e em conformidade com o quadro montado.",tp:"CNCNA",ob:1,rf:1,fase:1},
- {c:"1.2",s:"1. Documentação",t:"Alterações ao Esquema",cr:"Reportar caso aplicável.",tp:"CNCNA",ob:0,rf:0,fase:1},
- {c:"1.3",s:"1. Documentação",t:"Lista de materiais",cr:"Os componentes instalados correspondem à lista de materiais aprovada.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"1.4",s:"1. Documentação",t:"Placa de características",cr:"Instalada, legível e com os valores nominais e a identificação corretos.",tp:"CNCNA",ob:1,rf:1,fase:1},
- {c:"1.5",s:"1. Documentação",t:"Etiquetas de aviso",cr:"Etiquetas de segurança instaladas e no idioma aplicável ao cliente final.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"1.6",s:"1. Documentação",t:"Grau de proteção IP",cr:"O armário, entradas de cabos e os acessórios mantêm o grau de proteção IP especificado de acordo com o projeto.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"1.7",s:"1. Documentação",t:"Componentes de software (CTO)",cr:"Verificar se o software da HMI e do SCC está instalado, atualizado e corretamente configurado, quando aplicável.",tp:"CNCNA",ob:0,rf:0,fase:1},
- {c:"2.1",s:"2. Armário & Parte Mecânica",t:"Estado de armário",cr:"Sem amolgadelas, corrosão, riscos ou defeitos na pintura.",tp:"CNCNA",ob:1,rf:1,fase:1},
- {c:"2.2",s:"2. Armário & Parte Mecânica",t:"Portas e fechaduras",cr:"As portas abrem livremente, as dobradiças estão seguras, permanecem abertas quando previsto e fecham corretamente.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"2.3",s:"2. Armário & Parte Mecânica",t:"Juntas de vedação",cr:"Presentes, sem danos e contínuas em todo o perímetro.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"2.4",s:"2. Armário & Parte Mecânica",t:"Bucins",cr:"Corretamente apertados e com todas as aberturas não utilizadas devidamente obturadas.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"2.5",s:"2. Armário & Parte Mecânica",t:"Calhas DIN",cr:"Corretamente fixadas e sem deformações.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"2.6",s:"2. Armário & Parte Mecânica",t:"Acessórios",cr:"Chaves, olhais de elevação e restantes acessórios fornecidos.",tp:"CNCNA",ob:0,rf:0,fase:1},
- {c:"2.7",s:"2. Armário & Parte Mecânica",t:"Ventilação",cr:"Filtros das ventoinhas limpos e corretamente instalados (quando aplicável – armários com ar condicionado/ventilação).",tp:"CNCNA",ob:0,rf:0,fase:1},
- {c:"2.8",s:"2. Armário & Parte Mecânica",t:"Limpeza",cr:"Quadro isento de pó, resíduos e outros corpos estranhos.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"3.1",s:"3. Componentes",t:"Verificação dos componentes",cr:"Os componentes instalados correspondem aos esquemas elétricos e à lista de materiais (BOM).",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"3.2",s:"3. Componentes",t:"Estado dos componentes",cr:"Componentes sem danos, fissuras ou defeitos.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"3.3",s:"3. Componentes",t:"Montagem",cr:"Componentes corretamente montados, bem fixados e orientados de acordo com a documentação técnica.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"3.4",s:"3. Componentes",t:"Identificação",cr:"Componentes e bornes devidamente identificados e legíveis.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"3.5",s:"3. Componentes",t:"Tinta de segurança",cr:"Os terminais críticos apresentam marca vermelha de controlo após verificação do binário de aperto (GRD).",tp:"CNCNA",ob:1,rf:1,fase:1},
- {c:"3.6",s:"3. Componentes",t:"Configuração dos dispositivos",cr:"Os dispositivos de proteção encontram-se regulados de acordo com a documentação técnica.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.1",s:"4. Cabelagem",t:"Identificação dos condutores",cr:"Todos os condutores encontram-se corretamente identificados.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.2",s:"4. Cabelagem",t:"Cor e secção dos condutores",cr:"Cor e secção dos condutores em conformidade com os esquemas elétricos.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.3",s:"4. Cabelagem",t:"Ponteiras e terminações",cr:"Ponteiras corretamente cravadas e sem fios desencapados ou filamentos expostos.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.4",s:"4. Cabelagem",t:"Separação da cablagem",cr:"Cabos de potência e de comando devidamente separados, quando aplicável.",tp:"CNCNA",ob:0,rf:0,fase:1},
- {c:"4.5",s:"4. Cabelagem",t:"Folga da cablagem",cr:"Sem excesso de folga nos condutores.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.6",s:"4. Cabelagem",t:"Raio de curvatura",cr:"O raio mínimo de curvatura dos cabos é respeitado.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.7",s:"4. Cabelagem",t:"Ocupação das calhas",cr:"As calhas de cabos não se encontram sobrelotadas.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.8",s:"4. Cabelagem",t:"Descarnagem dos condutores",cr:"Sem isolamento danificado nem cobre exposto.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.9",s:"4. Cabelagem",t:"Encaminhamento da cablagem",cr:"Cablagem organizada, corretamente fixada e protegida contra danos.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"4.10",s:"4. Cabelagem",t:"Aperto dos bornes / componentes",cr:"Todos os bornes foram verificados e apertados.",tp:"CNCNA",ob:1,rf:1,fase:1},
- {c:"5.1",s:"5. Ligação equipotencial de proteção",t:"Condutores PE",cr:"Os condutores de proteção (PE) encontram-se corretamente instalados.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"5.2",s:"5. Ligação equipotencial de proteção",t:"Ligação à terra das portas",cr:"As portas possuem ligação à terra, quando aplicável.",tp:"CNCNA",ob:0,rf:0,fase:1},
- {c:"5.3",s:"5. Ligação equipotencial de proteção",t:"Barra de terra",cr:"A barra de terra está completa, corretamente instalada e identificada.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"5.4",s:"5. Ligação equipotencial de proteção",t:"Identificação PE",cr:"Os condutores de proteção (PE) encontram-se corretamente identificados.",tp:"CNCNA",ob:1,rf:0,fase:1},
- {c:"6.1",s:"6. Testes Elétricos",t:"Resistência de isolamento",cr:"Valor medido ≥ 1 MΩ.",tp:"Numerico",ob:1,rf:1,min:1,unid:"MΩ",fase:1},
- {c:"6.2",s:"6. Testes Elétricos",t:"Continuidade da ligação equipotencial de proteção",cr:"Valor medido ≤ 0,1 Ω.",tp:"Numerico",ob:1,rf:0,max:0.1,unid:"Ω",fase:1},
- {c:"6.3",s:"6. Testes Elétricos",t:"Ensaio de rigidez dielétrica",cr:"Ensaio de rigidez dielétrica realizado com sucesso, quando aplicável. Caso contrário, assinalar N/A.",tp:"CNCNA",ob:0,rf:0,fase:2},
- {c:"6.4",s:"6. Testes Elétricos",t:"Teste de Potência (CTO)",cr:"Verificação da alimentação de potência.",tp:"CNCNA",ob:1,rf:0,fase:2},
- {c:"6.5",s:"6. Testes Elétricos",t:"Testes de Sinais (CTO)",cr:"Verificação de sinais de entrada e saída (PLC) + Segurança + HMI + Canais de Comunicação Industrial (PROFINET/ETHERNET, etc.).",tp:"CNCNA",ob:1,rf:0,fase:2},
- {c:"7.1",s:"7. Aprovação Final",t:"Inspeção visual final",cr:"Quadro completo e sem defeitos.",tp:"CNCNA",ob:1,rf:1,fase:2},
- {c:"7.2",s:"7. Aprovação Final",t:"Verificação final da limpeza",cr:"Quadro limpo e preparado para expedição.",tp:"CNCNA",ob:1,rf:0,fase:2},
- {c:"7.3",s:"7. Aprovação Final",t:"Documentação incluída",cr:"Esquemas elétricos, registos de testes e manuais incluídos.",tp:"CNCNA",ob:1,rf:0,fase:2},
- {c:"7.4",s:"7. Aprovação Final",t:"Aprovação do Controlo da Qualidade",cr:"Quadro aprovado pelo inspetor de qualidade (reverificação nos pontos 7.1 e 7.2).",tp:"CNCNA",ob:1,rf:0,fase:2},
- {c:"7.5",s:"7. Aprovação Final",t:"Registos Fotográficos",cr:"Verificar se foi corretamente colocado no diretório do projeto.",tp:"CNCNA",ob:1,rf:1,fase:2},
+ {c:"1.1",s:"1. Documentação",t:"Esquemas elétricos",t_en:"Electrical drawings",cr:"Última revisão aprovada disponível e em conformidade com o quadro montado.",cr_en:"Latest approved revision available and matching the assembled panel.",tp:"CNCNA",ob:1,rf:1,fase:1},
+ {c:"1.2",s:"1. Documentação",t:"Alterações ao Esquema",t_en:"Drawing changes",cr:"Reportar caso aplicável.",cr_en:"Report if applicable.",tp:"CNCNA",ob:0,rf:0,fase:1},
+ {c:"1.3",s:"1. Documentação",t:"Lista de materiais",t_en:"Bill of materials",cr:"Os componentes instalados correspondem à lista de materiais aprovada.",cr_en:"Installed components match the approved bill of materials.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"1.4",s:"1. Documentação",t:"Placa de características",t_en:"Nameplate",cr:"Instalada, legível e com os valores nominais e a identificação corretos.",cr_en:"Installed, legible and with correct ratings and identification.",tp:"CNCNA",ob:1,rf:1,fase:1},
+ {c:"1.5",s:"1. Documentação",t:"Etiquetas de aviso",t_en:"Warning labels",cr:"Etiquetas de segurança instaladas e no idioma aplicável ao cliente final.",cr_en:"Safety labels installed and in the language applicable to the end customer.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"1.6",s:"1. Documentação",t:"Grau de proteção IP",t_en:"IP rating",cr:"O armário, entradas de cabos e os acessórios mantêm o grau de proteção IP especificado de acordo com o projeto.",cr_en:"The cabinet, cable entries and accessories maintain the specified IP rating per the project.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"1.7",s:"1. Documentação",t:"Componentes de software (CTO)",t_en:"Software components (CTO)",cr:"Verificar se o software da HMI e do SCC está instalado, atualizado e corretamente configurado, quando aplicável.",cr_en:"Check that HMI and SCC software is installed, updated and correctly configured, when applicable.",tp:"CNCNA",ob:0,rf:0,fase:1},
+ {c:"2.1",s:"2. Armário & Parte Mecânica",t:"Estado de armário",t_en:"Cabinet condition",cr:"Sem amolgadelas, corrosão, riscos ou defeitos na pintura.",cr_en:"No dents, corrosion, scratches or paint defects.",tp:"CNCNA",ob:1,rf:1,fase:1},
+ {c:"2.2",s:"2. Armário & Parte Mecânica",t:"Portas e fechaduras",t_en:"Doors and locks",cr:"As portas abrem livremente, as dobradiças estão seguras, permanecem abertas quando previsto e fecham corretamente.",cr_en:"Doors open freely, hinges secure, stay open when intended and close correctly.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"2.3",s:"2. Armário & Parte Mecânica",t:"Juntas de vedação",t_en:"Gaskets",cr:"Presentes, sem danos e contínuas em todo o perímetro.",cr_en:"Present, undamaged and continuous around the whole perimeter.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"2.4",s:"2. Armário & Parte Mecânica",t:"Bucins",t_en:"Cable glands",cr:"Corretamente apertados e com todas as aberturas não utilizadas devidamente obturadas.",cr_en:"Correctly tightened and all unused openings properly sealed.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"2.5",s:"2. Armário & Parte Mecânica",t:"Calhas DIN",t_en:"DIN rails",cr:"Corretamente fixadas e sem deformações.",cr_en:"Correctly fixed and without deformation.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"2.6",s:"2. Armário & Parte Mecânica",t:"Acessórios",t_en:"Accessories",cr:"Chaves, olhais de elevação e restantes acessórios fornecidos.",cr_en:"Keys, lifting eyes and other supplied accessories.",tp:"CNCNA",ob:0,rf:0,fase:1},
+ {c:"2.7",s:"2. Armário & Parte Mecânica",t:"Ventilação",t_en:"Ventilation",cr:"Filtros das ventoinhas limpos e corretamente instalados (quando aplicável – armários com ar condicionado/ventilação).",cr_en:"Fan filters clean and correctly installed (when applicable – cabinets with air conditioning/ventilation).",tp:"CNCNA",ob:0,rf:0,fase:1},
+ {c:"2.8",s:"2. Armário & Parte Mecânica",t:"Limpeza",t_en:"Cleanliness",cr:"Quadro isento de pó, resíduos e outros corpos estranhos.",cr_en:"Panel free of dust, debris and other foreign matter.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"3.1",s:"3. Componentes",t:"Verificação dos componentes",t_en:"Component verification",cr:"Os componentes instalados correspondem aos esquemas elétricos e à lista de materiais (BOM).",cr_en:"Installed components match the electrical drawings and the bill of materials (BOM).",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"3.2",s:"3. Componentes",t:"Estado dos componentes",t_en:"Component condition",cr:"Componentes sem danos, fissuras ou defeitos.",cr_en:"Components without damage, cracks or defects.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"3.3",s:"3. Componentes",t:"Montagem",t_en:"Mounting",cr:"Componentes corretamente montados, bem fixados e orientados de acordo com a documentação técnica.",cr_en:"Components correctly mounted, well fixed and oriented per the technical documentation.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"3.4",s:"3. Componentes",t:"Identificação",t_en:"Identification",cr:"Componentes e bornes devidamente identificados e legíveis.",cr_en:"Components and terminals properly identified and legible.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"3.5",s:"3. Componentes",t:"Tinta de segurança",t_en:"Torque seal",cr:"Os terminais críticos apresentam marca vermelha de controlo após verificação do binário de aperto (GRD).",cr_en:"Critical terminals show the red control mark after tightening torque check (GRD).",tp:"CNCNA",ob:1,rf:1,fase:1},
+ {c:"3.6",s:"3. Componentes",t:"Configuração dos dispositivos",t_en:"Device configuration",cr:"Os dispositivos de proteção encontram-se regulados de acordo com a documentação técnica.",cr_en:"Protection devices are set according to the technical documentation.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.1",s:"4. Cabelagem",t:"Identificação dos condutores",t_en:"Conductor identification",cr:"Todos os condutores encontram-se corretamente identificados.",cr_en:"All conductors are correctly identified.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.2",s:"4. Cabelagem",t:"Cor e secção dos condutores",t_en:"Conductor colour and cross-section",cr:"Cor e secção dos condutores em conformidade com os esquemas elétricos.",cr_en:"Conductor colour and cross-section comply with the electrical drawings.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.3",s:"4. Cabelagem",t:"Ponteiras e terminações",t_en:"Ferrules and terminations",cr:"Ponteiras corretamente cravadas e sem fios desencapados ou filamentos expostos.",cr_en:"Ferrules correctly crimped, with no stripped wires or exposed strands.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.4",s:"4. Cabelagem",t:"Separação da cablagem",t_en:"Wiring segregation",cr:"Cabos de potência e de comando devidamente separados, quando aplicável.",cr_en:"Power and control cables properly separated, when applicable.",tp:"CNCNA",ob:0,rf:0,fase:1},
+ {c:"4.5",s:"4. Cabelagem",t:"Folga da cablagem",t_en:"Wiring slack",cr:"Sem excesso de folga nos condutores.",cr_en:"No excess slack in the conductors.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.6",s:"4. Cabelagem",t:"Raio de curvatura",t_en:"Bending radius",cr:"O raio mínimo de curvatura dos cabos é respeitado.",cr_en:"The minimum cable bending radius is respected.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.7",s:"4. Cabelagem",t:"Ocupação das calhas",t_en:"Trunking fill",cr:"As calhas de cabos não se encontram sobrelotadas.",cr_en:"Cable trunking is not overfilled.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.8",s:"4. Cabelagem",t:"Descarnagem dos condutores",t_en:"Conductor stripping",cr:"Sem isolamento danificado nem cobre exposto.",cr_en:"No damaged insulation or exposed copper.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.9",s:"4. Cabelagem",t:"Encaminhamento da cablagem",t_en:"Wiring routing",cr:"Cablagem organizada, corretamente fixada e protegida contra danos.",cr_en:"Wiring organised, correctly fixed and protected against damage.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"4.10",s:"4. Cabelagem",t:"Aperto dos bornes / componentes",t_en:"Terminal / component tightening",cr:"Todos os bornes foram verificados e apertados.",cr_en:"All terminals have been checked and tightened.",tp:"CNCNA",ob:1,rf:1,fase:1},
+ {c:"5.1",s:"5. Ligação equipotencial de proteção",t:"Condutores PE",t_en:"PE conductors",cr:"Os condutores de proteção (PE) encontram-se corretamente instalados.",cr_en:"The protective (PE) conductors are correctly installed.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"5.2",s:"5. Ligação equipotencial de proteção",t:"Ligação à terra das portas",t_en:"Door earthing",cr:"As portas possuem ligação à terra, quando aplicável.",cr_en:"Doors are earthed, when applicable.",tp:"CNCNA",ob:0,rf:0,fase:1},
+ {c:"5.3",s:"5. Ligação equipotencial de proteção",t:"Barra de terra",t_en:"Earth bar",cr:"A barra de terra está completa, corretamente instalada e identificada.",cr_en:"The earth bar is complete, correctly installed and identified.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"5.4",s:"5. Ligação equipotencial de proteção",t:"Identificação PE",t_en:"PE identification",cr:"Os condutores de proteção (PE) encontram-se corretamente identificados.",cr_en:"The protective (PE) conductors are correctly identified.",tp:"CNCNA",ob:1,rf:0,fase:1},
+ {c:"6.1",s:"6. Testes Elétricos",t:"Resistência de isolamento",t_en:"Insulation resistance",cr:"Valor medido ≥ 1 MΩ.",cr_en:"Measured value ≥ 1 MΩ.",tp:"Numerico",ob:1,rf:1,min:1,unid:"MΩ",fase:1},
+ {c:"6.2",s:"6. Testes Elétricos",t:"Continuidade da ligação equipotencial de proteção",t_en:"Protective bonding continuity",cr:"Valor medido ≤ 0,1 Ω.",cr_en:"Measured value ≤ 0.1 Ω.",tp:"Numerico",ob:1,rf:0,max:0.1,unid:"Ω",fase:1},
+ {c:"6.3",s:"6. Testes Elétricos",t:"Ensaio de rigidez dielétrica",t_en:"Dielectric strength test",cr:"Ensaio de rigidez dielétrica realizado com sucesso, quando aplicável. Caso contrário, assinalar N/A.",cr_en:"Dielectric strength test performed successfully, when applicable. Otherwise mark N/A.",tp:"CNCNA",ob:0,rf:0,fase:2},
+ {c:"6.4",s:"6. Testes Elétricos",t:"Teste de Potência (CTO)",t_en:"Power test (CTO)",cr:"Verificação da alimentação de potência.",cr_en:"Verification of the power supply.",tp:"CNCNA",ob:1,rf:0,fase:2},
+ {c:"6.5",s:"6. Testes Elétricos",t:"Testes de Sinais (CTO)",t_en:"Signal tests (CTO)",cr:"Verificação de sinais de entrada e saída (PLC) + Segurança + HMI + Canais de Comunicação Industrial (PROFINET/ETHERNET, etc.).",cr_en:"Verification of input/output signals (PLC) + Safety + HMI + Industrial communication channels (PROFINET/ETHERNET, etc.).",tp:"CNCNA",ob:1,rf:0,fase:2},
+ {c:"7.1",s:"7. Aprovação Final",t:"Inspeção visual final",t_en:"Final visual inspection",cr:"Quadro completo e sem defeitos.",cr_en:"Panel complete and without defects.",tp:"CNCNA",ob:1,rf:1,fase:2},
+ {c:"7.2",s:"7. Aprovação Final",t:"Verificação final da limpeza",t_en:"Final cleanliness check",cr:"Quadro limpo e preparado para expedição.",cr_en:"Panel clean and ready for shipment.",tp:"CNCNA",ob:1,rf:0,fase:2},
+ {c:"7.3",s:"7. Aprovação Final",t:"Documentação incluída",t_en:"Documentation included",cr:"Esquemas elétricos, registos de testes e manuais incluídos.",cr_en:"Electrical drawings, test records and manuals included.",tp:"CNCNA",ob:1,rf:0,fase:2},
+ {c:"7.4",s:"7. Aprovação Final",t:"Aprovação do Controlo da Qualidade",t_en:"Quality Control approval",cr:"Quadro aprovado pelo inspetor de qualidade (reverificação nos pontos 7.1 e 7.2).",cr_en:"Panel approved by the quality inspector (re-check of points 7.1 and 7.2).",tp:"CNCNA",ob:1,rf:0,fase:2},
+ {c:"7.5",s:"7. Aprovação Final",t:"Registos Fotográficos",t_en:"Photographic records",cr:"Verificar se foi corretamente colocado no diretório do projeto.",cr_en:"Check that it was correctly placed in the project directory.",tp:"CNCNA",ob:1,rf:1,fase:2},
 ];
 BASE.forEach(p=>p.rf=0); // fotografias nunca obrigatórias (anexar é sempre opcional)
 // Checklist ATIVA (por inspeção/família). Recalculada por setPontos().
@@ -265,10 +266,19 @@ function setPontos(arr){
   FASE1_LAST = lastFase1(PONTOS);
 }
 setPontos(BASE);
-// Famílias de produto (carregadas do Firestore; a "Base" está sempre disponível)
-let FAMILIAS=[{ nome:"Base (Quadros Elétricos)", pontos:BASE, revisoes:DOC_HIST, docCode:DOC_CODE, docVer:DOC_VER, base:true }];
-function famByName(n){ return FAMILIAS.find(f=>f.nome===n) || FAMILIAS[0]; }
+// Tradução do CONTEÚDO dos pontos
+function pT(p){ return (LANG==='en'&&p.t_en)?p.t_en:(p.t||""); }
+function pCr(p){ return (LANG==='en'&&p.cr_en)?p.cr_en:(p.cr||""); }
+function pS(p){ return (LANG==='en')?(p.s_en||SEC_EN[p.s]||p.s||""):(p.s||""); }
+function secLabel(s,s_en){ return (LANG==='en')?(s_en||SEC_EN[s]||s):s; }
+// Famílias de produto: a BASE não aparece; cada família nova nasce a partir da base.
 function clonePts(arr){ return JSON.parse(JSON.stringify(arr)); }
+const FAM_NAMES=["Aidlin","Optifeed","Laser Oven","Conveyor"];
+function defFamilia(n){ return { nome:n, pontos:clonePts(BASE), _id:slug(n) }; }
+let FAMILIAS=FAM_NAMES.map(defFamilia);
+function famByName(n){ return FAMILIAS.find(f=>f.nome===n) || FAMILIAS[0]; }
+// Histórico de revisões GLOBAL (gerido na página Sobre pelo administrador)
+let REVISOES=clonePts(DOC_HIST);
 
 // ===== Estado / persistência =====
 const LS="qc_inspecoes_v2";
@@ -298,7 +308,7 @@ function render(){
     if(!FBuser) { btnBack.style.display="none"; return (view==="registo"?renderRegisto():renderLogin()); }
   }
   btnBack.style.display=(view==="home")?"none":"inline-block";
-  ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync,mudarpw:renderMudarPw,config:renderConfig,configfam:renderConfigFam,configponto:renderConfigPonto,configrev:renderConfigRev}[view]||renderHome)();
+  ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync,mudarpw:renderMudarPw,sobre:sobre,config:renderConfig,configfam:renderConfigFam,configponto:renderConfigPonto,configrev:renderConfigRev}[view]||renderHome)();
 }
 function renderLoading(){
   main.innerHTML=`<div class="auth-wrap"><div class="brandmark"><img src="logo.png" alt="Sidel"></div><h1>A ligar…</h1><p class="small">A verificar a sua sessão.</p></div>`;
@@ -354,16 +364,18 @@ function renderHome(){
     <div class="foot">${DOC_FULL}</div>`;
 }
 function sobre(){
-  main.innerHTML=`<h1>Sobre</h1>
-    <div class="card">
-      <p><b>Checklist de Verificação de Quadros Elétricos</b></p>
-      <p class="small">Código do documento: <b>${DOC_CODE}</b> · Versão: <b>${DOC_VER}</b> (${DOC_FULL})</p>
-      <h2>Histórico de revisões</h2>
-      <table class="rep" style="font-size:13px"><thead><tr><th>Rev.</th><th>Data</th><th>Natureza da mudança</th><th>Resp.</th><th>Aprovado</th></tr></thead>
-      <tbody>${DOC_HIST.map(h=>`<tr><td>${h.rev}</td><td>${h.data}</td><td>${esc(h.nota)}</td><td>${esc(h.resp)}</td><td>${esc(h.apr)}</td></tr>`).join("")}</tbody></table>
-    </div>
-    <button class="btn ghost wide" onclick="go('home')">‹ Voltar ao menu</button>`;
   view="sobre"; btnBack.style.display="inline-block";
+  const linhas=(REVISOES||[]).map((h,i)=>`<tr><td>${esc(h.rev)}</td><td>${esc(h.data)}</td><td>${esc(h.nota)}</td><td>${esc(h.resp)}</td><td>${esc(h.apr)}</td>${isAdmin?`<td style="white-space:nowrap"><span onclick="editRev(${i})" style="cursor:pointer">✎</span> <span onclick="delRev(${i})" style="cursor:pointer;color:var(--nc)">🗑</span></td>`:''}</tr>`).join("");
+  main.innerHTML=`<h1>${t('sobre')}</h1>
+    <div class="card">
+      <p><b>${LANG==='pt'?'Checklist de Verificação de Quadros Elétricos':'Electrical Panel Verification Checklist'}</b></p>
+      <p class="small">${LANG==='pt'?'Código do documento':'Document code'}: <b>${DOC_CODE}</b> · ${LANG==='pt'?'Versão':'Version'}: <b>${DOC_VER}</b></p>
+      <h2>${LANG==='pt'?'Histórico de revisões':'Revision history'}</h2>
+      <table class="rep" style="font-size:13px"><thead><tr><th>Rev.</th><th>${LANG==='pt'?'Data':'Date'}</th><th>${LANG==='pt'?'Natureza da mudança':'Change'}</th><th>${LANG==='pt'?'Resp.':'By'}</th><th>${LANG==='pt'?'Aprovado':'Approved'}</th>${isAdmin?'<th></th>':''}</tr></thead>
+      <tbody>${linhas}</tbody></table>
+      ${isAdmin?`<button class="btn primary wide" style="margin-top:10px" onclick="editRev(-1)">＋ ${LANG==='pt'?'Adicionar revisão':'Add revision'}</button>`:''}
+    </div>
+    <button class="btn ghost wide" onclick="go('home')">${t('voltar')}</button>`;
 }
 function novaInspecao(){ cur=null; go("nova"); }
 function clearDB(){
@@ -401,8 +413,8 @@ function criarInspecao(){
   const d=val("f_doc"), insp=val("f_insp"), famNome=val("f_fam");
   if(!d||!insp){ toast(t('preencha_doc_insp'),"err"); return; }
   const fam=famByName(famNome);
-  cur={ id:uid(), familia:fam.nome, pontos:clonePts(fam.pontos), revisoes:clonePts(fam.revisoes||DOC_HIST),
-        docCode:fam.docCode||DOC_CODE, docVer:fam.docVer||DOC_VER,
+  cur={ id:uid(), familia:fam.nome, pontos:clonePts(fam.pontos), revisoes:clonePts(REVISOES),
+        docCode:DOC_CODE, docVer:DOC_VER,
         doc:d, serie:val("f_serie"), projeto:val("f_proj"), cliente:val("f_cli"), local:val("f_loc"),
         inspetor:insp, inicio:Date.now(), fase1Fim:null, fim:null, estado:"Em curso",
         respostas:{}, utilizador:"" };
@@ -428,7 +440,7 @@ function firstPending(){ for(let k=0;k<N;k++){ const r=cur.respostas[PONTOS[k].c
 // ===== VISÃO GERAL DA INSPEÇÃO =====
 function secInfo(){
   const map=[];
-  PONTOS.forEach((p,i)=>{ let e=map.find(x=>x.s===p.s); if(!e){ e={s:p.s,fase:p.fase,total:0,done:0,nc:0,firstIdx:i}; map.push(e); }
+  PONTOS.forEach((p,i)=>{ let e=map.find(x=>x.s===p.s); if(!e){ e={s:p.s,s_en:p.s_en,fase:p.fase,total:0,done:0,nc:0,firstIdx:i}; map.push(e); }
     e.total++; const r=cur.respostas[p.c]||{}; if(r.concluido)e.done++; if(r.resultado==="NC")e.nc++; });
   return map;
 }
@@ -438,8 +450,8 @@ function renderOverview(){
   const done=PONTOS.filter(p=>{const r=cur.respostas[p.c];return r&&r.concluido;}).length;
   const fp=firstPending();
   const row=e=>`<div class="list-item" onclick="abrirSeccao('${e.s.replace(/'/g,"\\'")}')">
-      <div class="t"><div><b>${esc(e.s)}</b></div>
-        <div class="code">${e.done}/${e.total} concluídos${e.nc?` · <span style="color:var(--nc)">${e.nc} NC</span>`:''}</div>
+      <div class="t"><div><b>${esc(secLabel(e.s,e.s_en))}</b></div>
+        <div class="code">${e.done}/${e.total} ${t('concluidos')}${e.nc?` · <span style="color:var(--nc)">${e.nc} NC</span>`:''}</div>
         <div class="progress-bar" style="margin-top:6px;height:8px"><div class="progress-fill" style="width:${Math.round(e.done/e.total*100)}%"></div></div>
       </div><span style="color:var(--accent);font-size:20px">›</span></div>`;
   const grupo=f=>secs.filter(e=>e.fase===f).map(row).join("");
@@ -473,17 +485,17 @@ function renderSeccao(){
     const mark=r.concluido?'<span style="color:var(--ok)">✓</span>':(r.resultado==="NC"?'<span style="color:var(--nc)">⚠</span>':(r.resultado==="NA"?'<span style="color:var(--na)">–</span>':'<span style="color:#c3ccd8">○</span>'));
     return `<div class="list-item" onclick="curSec='${(o.p.s).replace(/'/g,"\\'")}';idx=${o.i};go('checklist')">
       <div style="font-size:18px;width:22px;text-align:center">${mark}</div>
-      <div class="t"><div><b>${o.p.c}</b> · ${esc(o.p.t)}</div></div>
+      <div class="t"><div><b>${o.p.c}</b> · ${esc(pT(o.p))}</div></div>
       <span style="color:var(--accent);font-size:20px">›</span></div>`;
   };
   main.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-      <span class="fase-badge ${fase===2?'f2':''}">FASE ${fase}</span>
+      <span class="fase-badge ${fase===2?'f2':''}">${t('fase')} ${fase}</span>
     </div>
-    <h1>${esc(curSec)}</h1>
-    <p class="small" style="margin-top:-6px;margin-bottom:10px">Selecione um ponto para verificar.</p>
+    <h1>${esc(secLabel(curSec, pts.length?pts[0].p.s_en:''))}</h1>
+    <p class="small" style="margin-top:-6px;margin-bottom:10px">${t('selecione_ponto')}</p>
     ${pts.map(row).join("")}
-    <button class="btn ghost wide" style="margin-top:12px" onclick="go('overview')">‹ Voltar às secções</button>`;
+    <button class="btn ghost wide" style="margin-top:12px" onclick="go('overview')">${t('voltar_seccoes')}</button>`;
 }
 
 // ===== CHECKLIST =====
@@ -533,17 +545,17 @@ function renderChecklist(){
   const obsReq=(r.resultado==="NC"||r.resultado==="NA"||(p.tp==="Texto"&&p.ob));
   main.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-      <span class="fase-badge ${p.fase===2?'f2':''}">FASE ${p.fase}</span>
+      <span class="fase-badge ${p.fase===2?'f2':''}">${t('fase')||'Fase'} ${p.fase}</span>
       <span class="small">${esc(cur.familia||'')}</span>
     </div>
     <div class="progress-wrap">
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      <div class="progress-meta"><span>Fase ${p.fase} · Ponto ${localNo} de ${total}</span><span>${pct}% · ${done} concluídos</span></div>
+      <div class="progress-meta"><span>${t('fase')} ${p.fase} · ${t('ponto')} ${localNo} ${t('de')} ${total}</span><span>${pct}% · ${done} ${t('concluidos')}</span></div>
     </div>
     <div class="card">
-      <span class="sec-tag">${esc(p.s)}</span>
-      <div><b>${p.c}</b> · <b>${esc(p.t)}</b></div>
-      <div class="crit">${esc(p.cr)}</div>
+      <span class="sec-tag">${esc(pS(p))}</span>
+      <div><b>${p.c}</b> · <b>${esc(pT(p))}</b></div>
+      <div class="crit">${esc(pCr(p))}</div>
       ${resultUI}
       <div style="margin-top:12px"><label class="fld">Observações ${obsReq?'<span class="req">*</span>':''}</label>
         <textarea id="obs" placeholder="${r.resultado==='NA'?'Justificação obrigatória…':(r.resultado==='NC'?'Descreva a não conformidade…':'Notas (opcional)…')}" oninput="setObs(this.value)">${esc(r.obs||"")}</textarea></div>
@@ -677,7 +689,7 @@ function renderRelatorio(){
   const rowsFor=f=>PONTOS.filter(p=>p.fase===f).map(p=>{const r=cur.respostas[p.c]||{};
     const res=r.resultado||(p.tp==="Numerico"?(r.valor!==undefined&&r.valor!==""?r.valor+" "+(p.unid||""):"—"):(r.obs?"Preenchido":"—"));
     const cls=r.resultado?("res-"+r.resultado):"";
-    return `<tr><td>${p.c}</td><td>${esc(p.t)}</td><td class="badge-res ${cls}">${esc(String(res))}</td><td>${esc(r.obs||"")}</td></tr>`;}).join("");
+    return `<tr><td>${p.c}</td><td>${esc(pT(p))}</td><td class="badge-res ${cls}">${esc(String(res))}</td><td>${esc(r.obs||"")}</td></tr>`;}).join("");
   const ncs=PONTOS.filter(p=>{const r=cur.respostas[p.c];return r&&r.resultado==="NC";});
   const fotos=[]; PONTOS.forEach(p=>{const r=cur.respostas[p.c];if(r&&r.fotos)r.fotos.forEach(f=>fotos.push({c:p.c,f:normFoto(f)}));});
   const norm=s=>s.toLowerCase().replace(/ /g,"").replace(/í/g,"i").replace(/é/g,"e").replace(/ç/g,"c").replace(/ã/g,"a");
@@ -704,7 +716,7 @@ function renderRelatorio(){
       <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(1)}</tbody></table>
       ${PONTOS.some(p=>(p.fase||1)===2)?`<h2>Fase 2</h2>
       <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(2)}</tbody></table>`:''}
-      ${ncs.length?`<h2>Não conformidades (${ncs.length})</h2><table><thead><tr><th>Ponto</th><th>Descrição</th><th>Observação</th></tr></thead><tbody>${ncs.map(p=>`<tr><td>${p.c}</td><td>${esc(p.t)}</td><td>${esc((cur.respostas[p.c].obs)||"")}</td></tr>`).join("")}</tbody></table>`:''}
+      ${ncs.length?`<h2>Não conformidades (${ncs.length})</h2><table><thead><tr><th>Ponto</th><th>Descrição</th><th>Observação</th></tr></thead><tbody>${ncs.map(p=>`<tr><td>${p.c}</td><td>${esc(pT(p))}</td><td>${esc((cur.respostas[p.c].obs)||"")}</td></tr>`).join("")}</tbody></table>`:''}
       ${fotos.length?`<h2>Evidências — fotos e documentos (${fotos.length})</h2><div style="display:flex;flex-wrap:wrap;gap:8px">${fotos.map(o=>`<figure style="margin:0;width:150px">${o.f.img?`<img src="${o.f.d}" style="width:150px;height:110px;object-fit:cover;border:1px solid #ccc;border-radius:6px">`:`<a href="${o.f.d}" download="${esc(o.f.n)}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:150px;height:110px;border:1px solid #ccc;border-radius:6px;background:#eef2f8;color:#1F3864;text-decoration:none;font-size:12px;text-align:center;padding:6px">📄<span style="margin-top:4px;word-break:break-all">${esc(shortName(o.f.n))}</span></a>`}<figcaption class="small">${o.c}</figcaption></figure>`).join("")}</div>`:''}
       <h2>Assinaturas</h2>
       <div style="display:flex;gap:40px;flex-wrap:wrap">
@@ -750,7 +762,7 @@ function initSync(){
     FBauth=firebase.auth(); FBdb=firebase.firestore();
     FBdb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
     cloudReady=true;
-    FBauth.onAuthStateChanged(u=>{ FBuser=u; authResolved=true; isAdmin=false; if(u){ subscribe(); loadAdmins(); loadFamilias(); } else if(unsub){unsub();unsub=null;} render(); });
+    FBauth.onAuthStateChanged(u=>{ FBuser=u; authResolved=true; isAdmin=false; if(u){ subscribe(); loadAdmins(); loadFamilias(); loadRevisoes(); } else if(unsub){unsub();unsub=null;} render(); });
   }catch(e){ cloudReady=false; authResolved=true; render(); }
 }
 function loadAdmins(){
@@ -898,8 +910,10 @@ function slug(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]
 function loadFamilias(){
   if(!cloudReady||!FBuser) return;
   FBdb.collection("familias").get().then(snap=>{
-    const arr=[FAMILIAS[0]]; // base interna sempre presente
-    snap.forEach(d=>{ const f=d.data(); if(f&&f.nome) arr.push({nome:f.nome, pontos:f.pontos||[], revisoes:f.revisoes||[], docCode:f.docCode||DOC_CODE, docVer:f.docVer||DOC_VER, base:false, _id:d.id}); });
+    const cloud={}; snap.forEach(d=>{ const f=d.data(); if(f&&f.nome) cloud[d.id]={nome:f.nome, pontos:f.pontos||[], _id:d.id}; });
+    const arr=[];
+    FAM_NAMES.forEach(n=>{ const id=slug(n); if(cloud[id]){ arr.push(cloud[id]); delete cloud[id]; } else arr.push(defFamilia(n)); });
+    Object.values(cloud).forEach(f=>arr.push(f)); // famílias extra criadas pelo admin
     FAMILIAS=arr;
     if(["home","nova","config","configfam"].includes(view)) render();
   }).catch(()=>{});
@@ -907,7 +921,7 @@ function loadFamilias(){
 function saveFamilia(fam){
   if(!cloudReady||!FBuser){ toast("Sem ligação — alteração só neste dispositivo.","err"); return; }
   const id=fam._id||slug(fam.nome); fam._id=id;
-  FBdb.collection("familias").doc(id).set({nome:fam.nome, pontos:fam.pontos||[], revisoes:fam.revisoes||[], docCode:fam.docCode||DOC_CODE, docVer:fam.docVer||DOC_VER, updatedAt:Date.now()},{merge:true}).catch(e=>toast(trad(e),"err"));
+  FBdb.collection("familias").doc(id).set({nome:fam.nome, pontos:fam.pontos||[], updatedAt:Date.now()},{merge:true}).catch(e=>toast(trad(e),"err"));
 }
 function deleteFamilia(fam){ if(cloudReady&&FBuser&&fam._id){ FBdb.collection("familias").doc(fam._id).delete().catch(()=>{}); } }
 
@@ -915,15 +929,14 @@ function renderConfig(){
   if(!isAdmin){ go("home"); return; }
   view="config"; btnBack.style.display="inline-block";
   const rows=FAMILIAS.map(f=>`<div class="list-item" onclick="editFam('${esc(f.nome).replace(/'/g,"\\'")}')">
-     <div class="t"><div><b>${esc(f.nome)}</b>${f.base?' <span class="small">(base)</span>':''}</div>
-       <div class="code">${(f.pontos||[]).length} pontos · ${(f.revisoes||[]).length} revisões</div></div>
+     <div class="t"><div><b>${esc(f.nome)}</b></div>
+       <div class="code">${(f.pontos||[]).length} pontos</div></div>
      <span style="color:var(--accent);font-size:20px">›</span></div>`).join("");
   main.innerHTML=`<h1>${t('config')}</h1>
     <div class="card">
       <label class="fld">Nova família (nome)</label>
-      <input id="f_newfam" placeholder="ex.: Aidlin, Optifeed, Laser Oven, Conveyors">
-      <label class="fld" style="margin-top:8px">Basear em</label>
-      <select id="f_basefam">${FAMILIAS.map(f=>`<option>${esc(f.nome)}</option>`).join("")}</select>
+      <input id="f_newfam" placeholder="ex.: Aidlin, Optifeed, Laser Oven, Conveyor">
+      <p class="small" style="margin-top:6px">A nova família é criada a partir da checklist base.</p>
       <button class="btn primary wide" style="margin-top:10px" onclick="criarFamilia()">Adicionar família</button>
     </div>
     <div class="ov-sec-title">Famílias de produto</div>
@@ -931,52 +944,46 @@ function renderConfig(){
     <button class="btn ghost wide" style="margin-top:12px" onclick="go('home')">${t('voltar')}</button>`;
 }
 function criarFamilia(){
-  const nome=val("f_newfam"), base=val("f_basefam");
+  const nome=val("f_newfam");
   if(!nome){ toast("Indique o nome da família.","err"); return; }
   if(FAMILIAS.some(f=>f.nome.toLowerCase()===nome.toLowerCase())){ toast("Já existe uma família com esse nome.","err"); return; }
-  const src=famByName(base);
-  const fam={ nome, pontos:clonePts(src.pontos), revisoes:clonePts(src.revisoes||DOC_HIST), docCode:src.docCode||DOC_CODE, docVer:src.docVer||DOC_VER, base:false };
+  const fam={ nome, pontos:clonePts(BASE), _id:slug(nome) };
   FAMILIAS.push(fam); saveFamilia(fam); toast("Família criada.","ok"); render();
 }
 function editFam(n){ curFam=famByName(n); go("configfam"); }
 function renderConfigFam(){
   if(!isAdmin||!curFam){ go("config"); return; }
   view="configfam"; btnBack.style.display="inline-block";
-  const ro=!!curFam.base;
   const rows=(curFam.pontos||[]).map((p,i)=>`<div class="list-item">
-     <div class="t" ${ro?'':`onclick="editPonto(${i})"`} style="cursor:${ro?'default':'pointer'}"><div><b>${esc(p.c)}</b> · ${esc(p.t)}</div>
+     <div class="t" onclick="editPonto(${i})" style="cursor:pointer"><div><b>${esc(p.c)}</b> · ${esc(p.t)}</div>
        <div class="code">${esc(p.s)} · ${p.tp} · Fase ${p.fase||1}${p.ob?' · obrig.':''}</div></div>
-     ${ro?'':`<button class="btn ghost" style="padding:8px 10px;color:var(--nc)" onclick="delPonto(${i})">🗑</button>`}
+     <button class="btn ghost" style="padding:8px 10px;color:var(--nc)" onclick="delPonto(${i})">🗑</button>
    </div>`).join("");
   main.innerHTML=`<h1>${esc(curFam.nome)}</h1>
-    ${ro?`<div class="card"><p class="small">Esta é a checklist <b>base</b> e não é editável. No configurador, cria uma família a partir dela para a modificares.</p></div>`:''}
-    <div class="card">
-      <div class="row"><div><label class="fld">Código do documento</label><input id="f_fdoc" value="${esc(curFam.docCode||DOC_CODE)}" ${ro?'disabled':''}></div>
-      <div><label class="fld">Versão</label><input id="f_fver" value="${esc(curFam.docVer||DOC_VER)}" ${ro?'disabled':''}></div></div>
-      ${ro?'':`<button class="btn ghost wide" style="margin-top:8px" onclick="salvarCabFam()">Guardar código/versão</button>`}
-      <button class="btn accent wide" style="margin-top:8px" onclick="go('configrev')">Editar histórico de revisões</button>
-    </div>
+    <p class="small" style="margin-top:-6px;margin-bottom:8px">Edita a lista de controlo desta família. A versão/revisões gerem-se em «Sobre / versão».</p>
     <div class="ov-sec-title">Pontos (${(curFam.pontos||[]).length})</div>
     ${rows}
-    ${ro?'':`<button class="btn primary wide" style="margin-top:10px" onclick="editPonto(-1)">＋ Adicionar ponto</button>`}
-    ${ro?'':`<button class="btn ghost wide" style="margin-top:8px;color:var(--nc)" onclick="apagarFamilia()">Apagar família</button>`}
+    <button class="btn primary wide" style="margin-top:10px" onclick="editPonto(-1)">＋ Adicionar ponto</button>
+    <button class="btn ghost wide" style="margin-top:8px;color:var(--nc)" onclick="apagarFamilia()">Apagar família</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="go('config')">${t('voltar')}</button>`;
 }
-function salvarCabFam(){ curFam.docCode=val("f_fdoc"); curFam.docVer=val("f_fver"); saveFamilia(curFam); toast("Guardado.","ok"); }
-function apagarFamilia(){ if(curFam.base){toast("A base não pode ser apagada.","err");return;} if(confirm("Apagar a família «"+curFam.nome+"»?")){ deleteFamilia(curFam); FAMILIAS=FAMILIAS.filter(f=>f!==curFam); curFam=null; go("config"); } }
+function apagarFamilia(){ if(confirm("Apagar a família «"+curFam.nome+"»?")){ deleteFamilia(curFam); FAMILIAS=FAMILIAS.filter(f=>f!==curFam); curFam=null; go("config"); } }
 function delPonto(i){ if(confirm("Apagar este ponto?")){ curFam.pontos.splice(i,1); saveFamilia(curFam); render(); } }
 function editPonto(i){ curPtIdx=i; go("configponto"); }
 function renderConfigPonto(){
   if(!isAdmin||!curFam){ go("config"); return; }
   view="configponto"; btnBack.style.display="inline-block";
-  const novo=curPtIdx<0; const p=novo?{c:"",s:"",t:"",cr:"",tp:"CNCNA",ob:1,fase:1,min:"",max:"",unid:""}:curFam.pontos[curPtIdx];
+  const novo=curPtIdx<0; const p=novo?{c:"",s:"",s_en:"",t:"",t_en:"",cr:"",cr_en:"",tp:"CNCNA",ob:1,fase:1,min:"",max:"",unid:""}:curFam.pontos[curPtIdx];
   main.innerHTML=`<h1>${novo?'Novo ponto':'Editar ponto'}</h1>
     <div class="card grid">
       <div class="row"><div><label class="fld">Código</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
       <div><label class="fld">Fase</label><select id="p_fase"><option value="1" ${(p.fase||1)==1?'selected':''}>1</option><option value="2" ${(p.fase||1)==2?'selected':''}>2</option></select></div></div>
-      <div><label class="fld">Secção</label><input id="p_s" value="${esc(p.s)}" placeholder="ex.: 1. Documentação"></div>
-      <div><label class="fld">Título</label><input id="p_t" value="${esc(p.t)}"></div>
-      <div><label class="fld">Critério de aceitação</label><textarea id="p_cr">${esc(p.cr)}</textarea></div>
+      <div><label class="fld">Secção (PT)</label><input id="p_s" value="${esc(p.s)}" placeholder="ex.: 1. Documentação"></div>
+      <div><label class="fld">Secção (EN)</label><input id="p_sen" value="${esc(p.s_en||'')}" placeholder="ex.: 1. Documentation"></div>
+      <div><label class="fld">Título (PT)</label><input id="p_t" value="${esc(p.t)}"></div>
+      <div><label class="fld">Título (EN)</label><input id="p_ten" value="${esc(p.t_en||'')}"></div>
+      <div><label class="fld">Critério (PT)</label><textarea id="p_cr">${esc(p.cr)}</textarea></div>
+      <div><label class="fld">Critério (EN)</label><textarea id="p_cren">${esc(p.cr_en||'')}</textarea></div>
       <div class="row"><div><label class="fld">Tipo de resposta</label><select id="p_tp">
         ${["CNCNA","Numerico","Texto"].map(o=>`<option ${p.tp===o?'selected':''}>${o}</option>`).join("")}
       </select></div>
@@ -989,39 +996,36 @@ function renderConfigPonto(){
     <button class="btn ghost wide" style="margin-top:8px" onclick="go('configfam')">${t('cancelar')}</button>`;
 }
 function salvarPonto(){
-  const p={ c:val("p_c"), s:val("p_s"), t:val("p_t"), cr:val("p_cr"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, rf:0, fase: parseInt(val("p_fase"))||1 };
+  const p={ c:val("p_c"), s:val("p_s"), s_en:val("p_sen"), t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, rf:0, fase: parseInt(val("p_fase"))||1 };
   const mn=val("p_min"), mx=val("p_max"), un=val("p_unid");
   if(mn!=="") p.min=parseFloat(mn.replace(",",".")); if(mx!=="") p.max=parseFloat(mx.replace(",",".")); if(un) p.unid=un;
-  if(!p.c||!p.t){ toast("Código e título são obrigatórios.","err"); return; }
+  if(!p.c||!p.t){ toast("Código e título (PT) são obrigatórios.","err"); return; }
   if(curPtIdx<0) curFam.pontos.push(p); else curFam.pontos[curPtIdx]=p;
   saveFamilia(curFam); toast("Ponto guardado.","ok"); go("configfam");
 }
-function renderConfigRev(){
-  if(!isAdmin||!curFam){ go("config"); return; }
-  view="configrev"; btnBack.style.display="inline-block";
-  const rows=(curFam.revisoes||[]).map((h,i)=>`<div class="list-item">
-     <div class="t"><div><b>Rev ${esc(h.rev)}</b> · ${esc(h.data)}</div><div class="code">${esc(h.nota)}${h.resp?' · '+esc(h.resp):''}</div></div>
-     <button class="btn ghost" style="padding:8px 10px" onclick="editRev(${i})">✎</button>
-     <button class="btn ghost" style="padding:8px 10px;color:var(--nc)" onclick="delRev(${i})">🗑</button></div>`).join("");
-  main.innerHTML=`<h1>Histórico de revisões</h1>
-    <p class="small" style="margin-top:-6px;margin-bottom:10px">${esc(curFam.nome)}</p>
-    ${rows||'<p class="small">Sem revisões.</p>'}
-    <button class="btn primary wide" style="margin-top:10px" onclick="editRev(-1)">＋ Adicionar revisão</button>
-    <button class="btn ghost wide" style="margin-top:8px" onclick="go('configfam')">${t('voltar')}</button>`;
-}
+function renderConfigRev(){ go("sobre"); } // revisões geridas na página Sobre
+// Revisões GLOBAIS (geridas na página Sobre pelo administrador)
 function editRev(i){
-  const novo=i<0; const h=novo?{rev:"",data:"",nota:"",resp:"",apr:""}:curFam.revisoes[i];
+  if(!isAdmin) return;
+  const novo=i<0; const h=novo?{rev:"",data:"",nota:"",resp:"",apr:""}:REVISOES[i];
   const rev=prompt("Revisão (ex.: 03):", h.rev); if(rev===null)return;
   const data=prompt("Data (dd/mm/aaaa):", h.data||new Date().toLocaleDateString("pt-PT")); if(data===null)return;
   const nota=prompt("Natureza da mudança:", h.nota); if(nota===null)return;
   const resp=prompt("Responsável:", h.resp); if(resp===null)return;
   const apr=prompt("Aprovado por:", h.apr); if(apr===null)return;
-  const obj={rev:rev.trim(),data:data.trim(),nota:nota.trim(),resp:resp.trim(),apr:apr.trim()};
-  if(!curFam.revisoes) curFam.revisoes=[];
-  if(novo) curFam.revisoes.push(obj); else curFam.revisoes[i]=obj;
-  saveFamilia(curFam); render();
+  const obj={rev:(rev||"").trim(),data:(data||"").trim(),nota:(nota||"").trim(),resp:(resp||"").trim(),apr:(apr||"").trim()};
+  if(novo) REVISOES.push(obj); else REVISOES[i]=obj;
+  saveRevisoes(); render();
 }
-function delRev(i){ if(confirm("Apagar revisão?")){ curFam.revisoes.splice(i,1); saveFamilia(curFam); render(); } }
+function delRev(i){ if(!isAdmin)return; if(confirm("Apagar revisão?")){ REVISOES.splice(i,1); saveRevisoes(); render(); } }
+function loadRevisoes(){
+  if(!cloudReady||!FBuser) return;
+  FBdb.collection("config").doc("versoes").get().then(d=>{ if(d&&d.exists&&Array.isArray(d.data().linhas)) REVISOES=d.data().linhas; if(view==="sobre")render(); }).catch(()=>{});
+}
+function saveRevisoes(){
+  if(!cloudReady||!FBuser){ toast("Sem ligação — alteração só neste dispositivo.","err"); return; }
+  FBdb.collection("config").doc("versoes").set({linhas:REVISOES, updatedAt:Date.now()}).catch(e=>toast(trad(e),"err"));
+}
 
 // ===== PWA =====
 if("serviceWorker" in navigator && location.protocol!=="file:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
