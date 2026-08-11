@@ -197,6 +197,24 @@ const T={
 };
 function t(k){ return (T[LANG]&&T[LANG][k]) || T.pt[k] || k; }
 function setLang(l){ LANG=l; localStorage.setItem("lang",l); render(); }
+Object.assign(T.pt,{ ligado_como:"Ligado como", perfil:"Perfil", administrador:"Administrador", inspetor_perfil:"Inspetor",
+  sync_desc:"Os relatórios sincronizam automaticamente entre os teus dispositivos. Funciona offline e envia quando houver ligação.",
+  inspecoes_base:"Inspeções na base", administracao:"Administração",
+  admin_reset_desc:"Repor a palavra-passe de um utilizador. Ele recebe um email para definir uma nova. Ninguém vê as palavras-passe.",
+  email_util:"Email do utilizador", enviar_reposicao:"Enviar reposição por email",
+  controlo_qualidade:"Controlo de Qualidade", entrar_sub:"Inicie sessão para aceder às inspeções.", registar_sub:"Registe-se para aceder às inspeções.",
+  palavra_passe:"Palavra-passe", conf_pw:"Confirmar palavra-passe", ja_tenho:"‹ Já tenho conta",
+  mudar_pw_tit:"Mudar palavra-passe", conta_label:"Conta", pw_atual:"Palavra-passe atual", pw_nova:"Nova palavra-passe (mín. 6)",
+  pw_conf:"Confirmar nova palavra-passe", guardar_pw:"Guardar nova palavra-passe", a_ligar:"A ligar…", verificar_sessao:"A verificar a sua sessão." });
+Object.assign(T.en,{ ligado_como:"Signed in as", perfil:"Profile", administrador:"Administrator", inspetor_perfil:"Inspector",
+  sync_desc:"Reports sync automatically across your devices. Works offline and uploads when a connection is available.",
+  inspecoes_base:"Inspections in database", administracao:"Administration",
+  admin_reset_desc:"Reset a user's password. They receive an email to set a new one. Nobody can see the passwords.",
+  email_util:"User email", enviar_reposicao:"Send reset email",
+  controlo_qualidade:"Quality Control", entrar_sub:"Sign in to access inspections.", registar_sub:"Register to access inspections.",
+  palavra_passe:"Password", conf_pw:"Confirm password", ja_tenho:"‹ I already have an account",
+  mudar_pw_tit:"Change password", conta_label:"Account", pw_atual:"Current password", pw_nova:"New password (min. 6)",
+  pw_conf:"Confirm new password", guardar_pw:"Save new password", a_ligar:"Connecting…", verificar_sessao:"Verifying your session." });
 
 // ===== Documento / versão =====
 const DOC_CODE="MOD_105_IE_SMF", DOC_VER="02", DOC_FULL="MOD_105_IE_SMF_02";
@@ -311,21 +329,21 @@ function render(){
   ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync,mudarpw:renderMudarPw,sobre:sobre,config:renderConfig,configfam:renderConfigFam,configponto:renderConfigPonto,configrev:renderConfigRev}[view]||renderHome)();
 }
 function renderLoading(){
-  main.innerHTML=`<div class="auth-wrap"><div class="brandmark"><img src="logo.png" alt="Sidel"></div><h1>A ligar…</h1><p class="small">A verificar a sua sessão.</p></div>`;
+  main.innerHTML=`<div class="auth-wrap"><div class="brandmark"><img src="logo.png" alt="Sidel"></div><h1>${t('a_ligar')}</h1><p class="small">${t('verificar_sessao')}</p></div>`;
 }
 function renderLogin(){
-  const diag = (typeof firebase==="undefined") ? '⚠️ Sem ligação à internet. É necessária ligação para iniciar sessão da primeira vez.'
-            : (!cloudReady||!FBauth) ? '⚠️ A ligar à conta…' : '';
+  const diag = (typeof firebase==="undefined") ? (LANG==='pt'?'⚠️ Sem ligação à internet. É necessária ligação para iniciar sessão da primeira vez.':'⚠️ No internet connection. A connection is required for the first sign-in.')
+            : (!cloudReady||!FBauth) ? (LANG==='pt'?'⚠️ A ligar à conta…':'⚠️ Connecting…') : '';
   main.innerHTML=`<div class="auth-wrap">
     <div class="brandmark"><img src="logo.png" alt="Sidel"></div>
-    <h1 style="text-align:center">Controlo de Qualidade</h1>
-    <p class="small" style="text-align:center;margin-bottom:14px">Inicie sessão para aceder às inspeções.</p>
+    <h1 style="text-align:center">${t('controlo_qualidade')}</h1>
+    <p class="small" style="text-align:center;margin-bottom:14px">${t('entrar_sub')}</p>
     <div class="card">
       ${diag?`<p class="small" style="font-weight:700">${diag}</p>`:''}
       <label class="fld">Email</label><input id="f_em" type="email" autocomplete="username" inputmode="email">
-      <label class="fld" style="margin-top:8px">Palavra-passe</label><input id="f_pw" type="password" autocomplete="current-password">
-      <button class="btn primary wide" style="margin-top:14px" onclick="entrar()">Entrar</button>
-      <button class="btn ghost wide" style="margin-top:8px" onclick="go('registo')">Criar conta</button>
+      <label class="fld" style="margin-top:8px">${t('palavra_passe')}</label><input id="f_pw" type="password" autocomplete="current-password">
+      <button class="btn primary wide" style="margin-top:14px" onclick="entrar()">${t('entrar')}</button>
+      <button class="btn ghost wide" style="margin-top:8px" onclick="go('registo')">${t('criar_conta')}</button>
     </div>
     <div class="foot">${DOC_FULL}</div>
   </div>`;
@@ -333,14 +351,14 @@ function renderLogin(){
 function renderRegisto(){
   main.innerHTML=`<div class="auth-wrap">
     <div class="brandmark"><img src="logo.png" alt="Sidel"></div>
-    <h1 style="text-align:center">Criar conta</h1>
-    <p class="small" style="text-align:center;margin-bottom:14px">Registe-se para aceder às inspeções.</p>
+    <h1 style="text-align:center">${t('criar_conta')}</h1>
+    <p class="small" style="text-align:center;margin-bottom:14px">${t('registar_sub')}</p>
     <div class="card">
       <label class="fld">Email</label><input id="f_em" type="email" autocomplete="username" inputmode="email">
-      <label class="fld" style="margin-top:8px">Palavra-passe (mín. 6)</label><input id="f_pw" type="password" autocomplete="new-password">
-      <label class="fld" style="margin-top:8px">Confirmar palavra-passe</label><input id="f_pw2" type="password" autocomplete="new-password">
-      <button class="btn primary wide" style="margin-top:14px" onclick="criarConta()">Criar conta</button>
-      <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">‹ Já tenho conta</button>
+      <label class="fld" style="margin-top:8px">${t('pw_nova')}</label><input id="f_pw" type="password" autocomplete="new-password">
+      <label class="fld" style="margin-top:8px">${t('conf_pw')}</label><input id="f_pw2" type="password" autocomplete="new-password">
+      <button class="btn primary wide" style="margin-top:14px" onclick="criarConta()">${t('criar_conta')}</button>
+      <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">${t('ja_tenho')}</button>
     </div>
     <div class="foot">${DOC_FULL}</div>
   </div>`;
@@ -856,34 +874,34 @@ function renderSync(){
       </div>
       <button class="btn ghost wide" onclick="go('home')">‹ Voltar</button>`; return;
   }
-  main.innerHTML=`<h1>Conta</h1>
+  main.innerHTML=`<h1>${t('conta_label')}</h1>
     <div class="card">
-      <p>✅ <b>Ligado</b> como ${esc(FBuser.email)}</p>
-      <p class="small">Perfil: <b>${isAdmin?"Administrador":"Inspetor"}</b></p>
-      <p class="small">Os relatórios sincronizam automaticamente entre os teus dispositivos. Funciona offline e envia quando houver ligação.</p>
-      <p class="small">Inspeções na base: ${DB.length}</p>
+      <p>✅ <b>${t('ligado_como')}</b> ${esc(FBuser.email)}</p>
+      <p class="small">${t('perfil')}: <b>${isAdmin?t('administrador'):t('inspetor_perfil')}</b></p>
+      <p class="small">${t('sync_desc')}</p>
+      <p class="small">${t('inspecoes_base')}: ${DB.length}</p>
     </div>
     ${isAdmin?`<div class="card">
-      <p><b>Administração</b></p>
-      <p class="small">Repor a palavra-passe de um utilizador. Ele recebe um email para definir uma nova. Ninguém vê as palavras-passe.</p>
-      <label class="fld">Email do utilizador</label><input id="f_admresetem" type="email" inputmode="email" autocomplete="off">
-      <button class="btn accent wide" style="margin-top:10px" onclick="adminResetPw()">Enviar reposição por email</button>
+      <p><b>${t('administracao')}</b></p>
+      <p class="small">${t('admin_reset_desc')}</p>
+      <label class="fld">${t('email_util')}</label><input id="f_admresetem" type="email" inputmode="email" autocomplete="off">
+      <button class="btn accent wide" style="margin-top:10px" onclick="adminResetPw()">${t('enviar_reposicao')}</button>
     </div>`:''}
-    <button class="btn accent wide" onclick="go('mudarpw')">Mudar a minha palavra-passe</button>
-    <button class="btn ghost wide" style="margin-top:8px" onclick="sair()">Terminar sessão</button>
-    <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">‹ Voltar</button>`;
+    <button class="btn accent wide" onclick="go('mudarpw')">${t('mudar_pw')}</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="sair()">${t('terminar_sessao')}</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="go('home')">${t('voltar')}</button>`;
 }
 function renderMudarPw(){
   view="mudarpw"; btnBack.style.display="inline-block";
-  main.innerHTML=`<h1>Mudar palavra-passe</h1>
+  main.innerHTML=`<h1>${t('mudar_pw_tit')}</h1>
     <div class="card">
-      <p class="small">Conta: <b>${esc(FBuser?FBuser.email:'')}</b></p>
-      <label class="fld">Palavra-passe atual</label><input id="f_pwa" type="password" autocomplete="current-password">
-      <label class="fld" style="margin-top:8px">Nova palavra-passe (mín. 6)</label><input id="f_pwn" type="password" autocomplete="new-password">
-      <label class="fld" style="margin-top:8px">Confirmar nova palavra-passe</label><input id="f_pwn2" type="password" autocomplete="new-password">
-      <button class="btn primary wide" style="margin-top:14px" onclick="mudarPw()">Guardar nova palavra-passe</button>
+      <p class="small">${t('conta_label')}: <b>${esc(FBuser?FBuser.email:'')}</b></p>
+      <label class="fld">${t('pw_atual')}</label><input id="f_pwa" type="password" autocomplete="current-password">
+      <label class="fld" style="margin-top:8px">${t('pw_nova')}</label><input id="f_pwn" type="password" autocomplete="new-password">
+      <label class="fld" style="margin-top:8px">${t('pw_conf')}</label><input id="f_pwn2" type="password" autocomplete="new-password">
+      <button class="btn primary wide" style="margin-top:14px" onclick="mudarPw()">${t('guardar_pw')}</button>
     </div>
-    <button class="btn ghost wide" onclick="go('sync')">‹ Voltar</button>`;
+    <button class="btn ghost wide" onclick="go('sync')">${t('voltar')}</button>`;
 }
 function adminResetPw(){
   if(!isAdmin){ toast("Apenas administradores.","err"); return; }
