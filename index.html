@@ -282,6 +282,7 @@ let PONTOS=BASE, N=BASE.length, FASE1=[], FASE2=[], FASE1_LAST=-1;
 function lastFase1(arr){ let l=-1; arr.forEach((p,i)=>{ if((p.fase||1)===1) l=i; }); return l; }
 function setPontos(arr){
   PONTOS = (arr&&arr.length)? arr : BASE;
+  PONTOS.forEach(p=>{ p.fase = faseFromSec(p.s); }); // fase deriva sempre da secção
   N = PONTOS.length;
   FASE1 = PONTOS.filter(p=>(p.fase||1)===1);
   FASE2 = PONTOS.filter(p=>(p.fase||1)===2);
@@ -293,6 +294,7 @@ function pT(p){ return (LANG==='en'&&p.t_en)?p.t_en:(p.t||""); }
 function pCr(p){ return (LANG==='en'&&p.cr_en)?p.cr_en:(p.cr||""); }
 function pS(p){ return (LANG==='en')?(p.s_en||SEC_EN[p.s]||p.s||""):(p.s||""); }
 function showFoto(p){ return p.foto!==0 && p.foto!==false; }
+function faseFromSec(s){ return parseInt(s)===7 ? 2 : 1; } // secções 1–6 = Fase 1; secção 7 = Fase 2
 function secLabel(s,s_en){ return (LANG==='en')?(s_en||SEC_EN[s]||s):s; }
 // Famílias de produto: a BASE não aparece; cada família nova nasce a partir da base.
 function clonePts(arr){ return JSON.parse(JSON.stringify(arr)); }
@@ -998,9 +1000,9 @@ function renderConfigPonto(){
   const novo=curPtIdx<0; const p=novo?{c:"",s:"",s_en:"",t:"",t_en:"",cr:"",cr_en:"",tp:"CNCNA",ob:1,fase:1,foto:1,rf:0,min:"",max:"",unid:""}:curFam.pontos[curPtIdx];
   main.innerHTML=`<h1>${novo?L('Novo ponto','New point'):L('Editar ponto','Edit point')}</h1>
     <div class="card grid">
-      <div class="row"><div><label class="fld">${L('Código','Code')}</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
-      <div><label class="fld">${t('fase')}</label><select id="p_fase"><option value="1" ${(p.fase||1)==1?'selected':''}>1</option><option value="2" ${(p.fase||1)==2?'selected':''}>2</option></select></div></div>
-      <div><label class="fld">${L('Secção','Section')}</label><select id="p_sec">${SECTIONS.map(o=>`<option value="${esc(o.s)}" ${p.s===o.s?'selected':''}>${esc(secLabel(o.s,o.s_en))}</option>`).join("")}</select></div>
+      <div><label class="fld">${L('Código','Code')}</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
+      <div><label class="fld">${L('Secção','Section')}</label><select id="p_sec">${SECTIONS.map(o=>`<option value="${esc(o.s)}" ${p.s===o.s?'selected':''}>${esc(secLabel(o.s,o.s_en))}</option>`).join("")}</select>
+      <p class="small" style="margin-top:4px">${L('Fase automática: secções 1–6 → Fase 1; secção 7 → Fase 2.','Automatic phase: sections 1–6 → Phase 1; section 7 → Phase 2.')}</p></div>
       <div><label class="fld">${L('Título','Title')} (PT)</label><input id="p_t" value="${esc(p.t)}"></div>
       <div><label class="fld">${L('Título','Title')} (EN)</label><input id="p_ten" value="${esc(p.t_en||'')}"></div>
       <div><label class="fld">${L('Critério','Criterion')} (PT)</label><textarea id="p_cr">${esc(p.cr)}</textarea></div>
@@ -1021,7 +1023,7 @@ function renderConfigPonto(){
 function salvarPonto(){
   const mostraFoto = val("p_foto")==="1"?1:0;
   const secObj = SECTIONS.find(o=>o.s===val("p_sec")) || SECTIONS[0];
-  const p={ c:val("p_c"), s:secObj.s, s_en:secObj.s_en, t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, foto:mostraFoto, rf: (mostraFoto && val("p_rf")==="1")?1:0, fase: parseInt(val("p_fase"))||1 };
+  const p={ c:val("p_c"), s:secObj.s, s_en:secObj.s_en, t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, foto:mostraFoto, rf: (mostraFoto && val("p_rf")==="1")?1:0, fase: faseFromSec(secObj.s) };
   const mn=val("p_min"), mx=val("p_max"), un=val("p_unid");
   if(mn!=="") p.min=parseFloat(mn.replace(",",".")); if(mx!=="") p.max=parseFloat(mx.replace(",",".")); if(un) p.unid=un;
   if(!p.c||!p.t){ toast(L("Código e título (PT) são obrigatórios.","Code and title (PT) are required."),"err"); return; }
