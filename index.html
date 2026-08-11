@@ -14,6 +14,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="firebase-config.js"></script>
 <style>
 :root{
@@ -174,7 +175,7 @@ const T={
    visao_geral:"Visão geral", continuar:"Continuar de onde parei", comecar:"Começar a inspeção",
    ver_resumo:"Ver resumo / concluir", toca_seccao:"Toca numa secção para ver e escolher os pontos.",
    selecione_ponto:"Selecione um ponto para verificar.", voltar_seccoes:"‹ Voltar às secções",
-   anterior:"‹ Anterior", seguinte:"Seguinte ›", observacoes:"Observações", fotos_docs:"Fotografias ou documentos",
+   anterior:"‹ Anterior", seguinte:"Seguinte ›", observacoes:"Observações", fotos_docs:"Fotografias ou PDF",
    opcional:"(opcional)", ponto:"Ponto", de:"de", concluidos:"concluídos", fase:"Fase",
    resumo:"Resumo da inspeção", conformes:"Conformes", nao_conf:"Não conf.", na:"N/A", por_validar:"Por validar",
    prosseguir:"Prosseguir para conclusão", conclusao:"Conclusão", responsavel:"Responsável / assinante",
@@ -191,7 +192,7 @@ const T={
    visao_geral:"Overview", continuar:"Continue where I left off", comecar:"Start the inspection",
    ver_resumo:"View summary / finish", toca_seccao:"Tap a section to see and pick the points.",
    selecione_ponto:"Select a point to check.", voltar_seccoes:"‹ Back to sections",
-   anterior:"‹ Previous", seguinte:"Next ›", observacoes:"Notes", fotos_docs:"Photos or documents",
+   anterior:"‹ Previous", seguinte:"Next ›", observacoes:"Notes", fotos_docs:"Photos or PDF",
    opcional:"(optional)", ponto:"Point", de:"of", concluidos:"done", fase:"Phase",
    resumo:"Inspection summary", conformes:"Conform", nao_conf:"Non-conf.", na:"N/A", por_validar:"Pending",
    prosseguir:"Proceed to conclusion", conclusao:"Conclusion", responsavel:"Responsible / signer",
@@ -592,9 +593,9 @@ function renderChecklist(){
         <label class="fld">${t('fotos_docs')} ${p.rf?'<span class="req">*</span> <span class="small">('+L('obrigatório','required')+')</span>':'<span class="small">('+L('opcional','optional')+')</span>'}</label>
         <div class="photos">
           ${(r.fotos||[]).map((f,i)=>{const o=normFoto(f);return `<div class="photo">${o.img?`<img src="${o.d}">`:`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--light);color:var(--blue);font-size:11px;padding:4px;text-align:center">📄<span style="margin-top:2px;word-break:break-all">${esc(shortName(o.n))}</span></div>`}<button class="del" onclick="delFoto(${i})">×</button></div>`;}).join("")}
-          <label class="addphoto">＋<input type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="addFoto(event)"></label>
+          <label class="addphoto">＋<input type="file" accept="image/*,application/pdf" style="display:none" onchange="addFoto(event)"></label>
         </div>
-        <div class="small" style="margin-top:4px">${L('Fotos (câmara/galeria) ou documentos (PDF, Word, Excel).','Photos (camera/gallery) or documents (PDF, Word, Excel).')}</div>
+        <div class="small" style="margin-top:4px">${L('Fotos (câmara/galeria) ou PDF (convertido em imagens).','Photos (camera/gallery) or PDF (converted to images).')}</div>
       </div>`:''}
       <div class="hint ${valid?'':'show'}" id="hint">${missMsg(p,r)}</div>
     </div>
@@ -611,11 +612,34 @@ function setObs(v){ const p=PONTOS[idx]; const r=cur.respostas[p.c]||{}; r.obs=v
 function updateNav(){ const p=PONTOS[idx],r=resp(),v=isValid(p,r); const h=document.getElementById("hint"); if(h){h.textContent=missMsg(p,r); h.className="hint "+(v?'':'show');} }
 function normFoto(f){ if(typeof f==="string") return {id:"L"+f.length,d:f,img:true,n:"foto.jpg"}; if(f&&!f.id) f.id="F"+Math.random().toString(36).slice(2,9); return f; }
 function shortName(n){ n=n||"ficheiro"; return n.length>16?n.slice(0,7)+"…"+n.slice(-6):n; }
-function addFoto(e){ const f=e.target.files[0]; if(!f)return; const isImg=(f.type||"").startsWith("image/"); const rd=new FileReader();
-  rd.onload=()=>{ const store=o=>{ const p=PONTOS[idx]; const r=cur.respostas[p.c]||{}; r.fotos=r.fotos||[]; r.fotos.push(o); cur.respostas[p.c]=r; persist(); renderChecklist(); };
-    const fid="F"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    if(isImg) resizeImg(rd.result,1280,img=>store({id:fid,d:img,img:true,n:f.name})); else store({id:fid,d:rd.result,img:false,n:f.name}); };
-  rd.readAsDataURL(f); }
+function addFoto(e){ const f=e.target.files[0]; if(!f)return; const type=(f.type||""); const isImg=type.startsWith("image/"); const isPdf=(type==="application/pdf")||/\.pdf$/i.test(f.name); const rd=new FileReader();
+  const nid=()=>"F"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const store=o=>{ const p=PONTOS[idx]; const r=cur.respostas[p.c]||{}; r.fotos=r.fotos||[]; r.fotos.push(o); cur.respostas[p.c]=r; persist(); renderChecklist(); };
+  rd.onload=()=>{
+    if(isImg){ resizeImg(rd.result,1280,img=>store({id:nid(),d:img,img:true,n:f.name})); return; }
+    if(isPdf){ pdfToImagens(rd.result, f.name); return; }
+    toast(L("Só são permitidas imagens e PDF.","Only images and PDF are allowed."),"err");
+  };
+  rd.readAsDataURL(f);
+  function pdfToImagens(dataUrl, nome){
+    if(typeof pdfjsLib==="undefined"){ toast(L("Não foi possível processar o PDF (sem ligação). Tente novamente com internet.","Could not process the PDF (offline). Try again online."),"err"); return; }
+    try{ if(!pdfjsLib.GlobalWorkerOptions.workerSrc) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }catch(_){}
+    const b64=dataUrl.split(',')[1]; const bin=atob(b64); const arr=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    toast(L("A converter PDF…","Converting PDF…"),"ok");
+    pdfjsLib.getDocument({data:arr}).promise.then(async pdf=>{
+      const base=(nome||"pdf").replace(/\.pdf$/i,'');
+      const total=Math.min(pdf.numPages,30);
+      for(let n=1;n<=total;n++){
+        const page=await pdf.getPage(n);
+        const vp=page.getViewport({scale:1.5});
+        const cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
+        await page.render({canvasContext:cv.getContext("2d"), viewport:vp}).promise;
+        store({id:nid(), d:cv.toDataURL("image/jpeg",0.7), img:true, n:base+" (p"+n+"/"+pdf.numPages+")"});
+      }
+      toast(L("PDF adicionado como imagem(ns).","PDF added as image(s)."),"ok");
+    }).catch(()=>toast(L("Falha ao ler o PDF.","Failed to read the PDF."),"err"));
+  }
+}
 function resizeImg(dataUrl,maxW,cb){ const img=new Image(); img.onload=()=>{ let w=img.width,h=img.height; if(w>maxW){h=h*maxW/w;w=maxW;} const cv=document.createElement("canvas"); cv.width=w;cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); cb(cv.toDataURL("image/jpeg",0.7)); }; img.onerror=()=>cb(dataUrl); img.src=dataUrl; }
 function delFoto(i){ const p=PONTOS[idx]; cur.respostas[p.c].fotos.splice(i,1); persist(); renderChecklist(); }
 function next(){ const p=PONTOS[idx]; persist(isValid(p,resp())); if(idx===FASE1_LAST){ go("faseend"); return; } if(idx<N-1){ idx++; go("checklist"); } }
