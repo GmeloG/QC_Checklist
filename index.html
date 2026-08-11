@@ -228,6 +228,7 @@ const DOC_HIST=[
 
 // ===== Checklist BASE MOD_105_IE_SMF_02 (base de todas as famílias) =====
 const SEC_EN={"1. Documentação":"1. Documentation","2. Armário & Parte Mecânica":"2. Cabinet & Mechanical","3. Componentes":"3. Components","4. Cabelagem":"4. Wiring","5. Ligação equipotencial de proteção":"5. Protective equipotential bonding","6. Testes Elétricos":"6. Electrical Tests","7. Aprovação Final":"7. Final Approval"};
+const SECTIONS=Object.keys(SEC_EN).map(s=>({s, s_en:SEC_EN[s]})); // secções predefinidas (não editáveis)
 const BASE=[
  {c:"1.1",s:"1. Documentação",t:"Esquemas elétricos",t_en:"Electrical drawings",cr:"Última revisão aprovada disponível e em conformidade com o quadro montado.",cr_en:"Latest approved revision available and matching the assembled panel.",tp:"CNCNA",ob:1,rf:1,fase:1},
  {c:"1.2",s:"1. Documentação",t:"Alterações ao Esquema",t_en:"Drawing changes",cr:"Reportar caso aplicável.",cr_en:"Report if applicable.",tp:"CNCNA",ob:0,rf:0,fase:1},
@@ -999,8 +1000,7 @@ function renderConfigPonto(){
     <div class="card grid">
       <div class="row"><div><label class="fld">${L('Código','Code')}</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
       <div><label class="fld">${t('fase')}</label><select id="p_fase"><option value="1" ${(p.fase||1)==1?'selected':''}>1</option><option value="2" ${(p.fase||1)==2?'selected':''}>2</option></select></div></div>
-      <div><label class="fld">${L('Secção','Section')} (PT)</label><input id="p_s" value="${esc(p.s)}" placeholder="ex.: 1. Documentação"></div>
-      <div><label class="fld">${L('Secção','Section')} (EN)</label><input id="p_sen" value="${esc(p.s_en||'')}" placeholder="ex.: 1. Documentation"></div>
+      <div><label class="fld">${L('Secção','Section')}</label><select id="p_sec">${SECTIONS.map(o=>`<option value="${esc(o.s)}" ${p.s===o.s?'selected':''}>${esc(secLabel(o.s,o.s_en))}</option>`).join("")}</select></div>
       <div><label class="fld">${L('Título','Title')} (PT)</label><input id="p_t" value="${esc(p.t)}"></div>
       <div><label class="fld">${L('Título','Title')} (EN)</label><input id="p_ten" value="${esc(p.t_en||'')}"></div>
       <div><label class="fld">${L('Critério','Criterion')} (PT)</label><textarea id="p_cr">${esc(p.cr)}</textarea></div>
@@ -1020,7 +1020,8 @@ function renderConfigPonto(){
 }
 function salvarPonto(){
   const mostraFoto = val("p_foto")==="1"?1:0;
-  const p={ c:val("p_c"), s:val("p_s"), s_en:val("p_sen"), t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, foto:mostraFoto, rf: (mostraFoto && val("p_rf")==="1")?1:0, fase: parseInt(val("p_fase"))||1 };
+  const secObj = SECTIONS.find(o=>o.s===val("p_sec")) || SECTIONS[0];
+  const p={ c:val("p_c"), s:secObj.s, s_en:secObj.s_en, t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, foto:mostraFoto, rf: (mostraFoto && val("p_rf")==="1")?1:0, fase: parseInt(val("p_fase"))||1 };
   const mn=val("p_min"), mx=val("p_max"), un=val("p_unid");
   if(mn!=="") p.min=parseFloat(mn.replace(",",".")); if(mx!=="") p.max=parseFloat(mx.replace(",",".")); if(un) p.unid=un;
   if(!p.c||!p.t){ toast(L("Código e título (PT) são obrigatórios.","Code and title (PT) are required."),"err"); return; }
