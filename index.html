@@ -97,6 +97,10 @@ textarea{min-height:80px;resize:vertical;}
 @media print{
   body{background:#fff;} header,.navbar,.no-print{display:none !important;}
   .app{box-shadow:none;max-width:100%;} main{padding:0;}
+  .rep figure{break-inside:avoid;page-break-inside:avoid;width:180px !important;}
+  .rep figure img{width:180px !important;height:135px !important;}
+  .rep table,.rep tr,.rep h2{break-inside:avoid;page-break-inside:avoid;}
+  .rep img{max-width:100%;}
 }
 .rep h1{text-align:left;}
 .rep table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0;}
