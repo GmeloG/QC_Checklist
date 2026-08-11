@@ -275,7 +275,7 @@ const BASE=[
  {c:"7.4",s:"7. Aprovação Final",t:"Aprovação do Controlo da Qualidade",t_en:"Quality Control approval",cr:"Quadro aprovado pelo inspetor de qualidade (reverificação nos pontos 7.1 e 7.2).",cr_en:"Panel approved by the quality inspector (re-check of points 7.1 and 7.2).",tp:"CNCNA",ob:1,rf:0,fase:2},
  {c:"7.5",s:"7. Aprovação Final",t:"Registos Fotográficos",t_en:"Photographic records",cr:"Verificar se foi corretamente colocado no diretório do projeto.",cr_en:"Check that it was correctly placed in the project directory.",tp:"CNCNA",ob:1,rf:1,fase:2},
 ];
-BASE.forEach(p=>p.rf=0); // fotografias nunca obrigatórias (anexar é sempre opcional)
+BASE.forEach(p=>{ p.rf=0; if(p.foto===undefined)p.foto=1; }); // defeito: campo de foto visível e não obrigatória (configurável por ponto)
 // Checklist ATIVA (por inspeção/família). Recalculada por setPontos().
 let PONTOS=BASE, N=BASE.length, FASE1=[], FASE2=[], FASE1_LAST=-1;
 function lastFase1(arr){ let l=-1; arr.forEach((p,i)=>{ if((p.fase||1)===1) l=i; }); return l; }
@@ -291,6 +291,7 @@ setPontos(BASE);
 function pT(p){ return (LANG==='en'&&p.t_en)?p.t_en:(p.t||""); }
 function pCr(p){ return (LANG==='en'&&p.cr_en)?p.cr_en:(p.cr||""); }
 function pS(p){ return (LANG==='en')?(p.s_en||SEC_EN[p.s]||p.s||""):(p.s||""); }
+function showFoto(p){ return p.foto!==0 && p.foto!==false; }
 function secLabel(s,s_en){ return (LANG==='en')?(s_en||SEC_EN[s]||s):s; }
 // Famílias de produto: a BASE não aparece; cada família nova nasce a partir da base.
 function clonePts(arr){ return JSON.parse(JSON.stringify(arr)); }
@@ -526,7 +527,7 @@ function isValid(p,r){
   if(p.tp==="Texto" && p.ob && !(r.obs&&r.obs.trim())) return false;
   if(r.resultado==="NC" && !(r.obs&&r.obs.trim())) return false;
   if(r.resultado==="NA" && !(r.obs&&r.obs.trim())) return false;
-  if(p.rf && (!r.fotos||!r.fotos.length)) return false;
+  if(p.rf && showFoto(p) && (!r.fotos||!r.fotos.length)) return false;
   if(p.tp==="Numerico" && !isNaN(r.valor) && r.valor!==""){
     if(p.min!==undefined && +r.valor<p.min) return false;
     if(p.max!==undefined && +r.valor>p.max) return false;
@@ -541,7 +542,7 @@ function missMsg(p,r){
   if(r.resultado==="NC" && !(r.obs&&r.obs.trim())) return L("Descreva a não conformidade.","Describe the non-conformity.");
   if(r.resultado==="NA" && !(r.obs&&r.obs.trim())) return L("Justifique o «Não aplicável».","Justify the ‘Not applicable’.");
   if(p.tp==="Texto" && p.ob && !(r.obs&&r.obs.trim())) return L("Preencha o campo obrigatório.","Fill in the required field.");
-  if(p.rf && (!r.fotos||!r.fotos.length)) return L("Anexe pelo menos uma fotografia ou documento.","Attach at least one photo or document.");
+  if(p.rf && showFoto(p) && (!r.fotos||!r.fotos.length)) return L("Anexe pelo menos uma fotografia ou documento.","Attach at least one photo or document.");
   return "";
 }
 function doneInFase(f){ return PONTOS.filter(p=>p.fase===f && cur.respostas[p.c] && cur.respostas[p.c].concluido).length; }
@@ -579,14 +580,14 @@ function renderChecklist(){
       ${resultUI}
       <div style="margin-top:12px"><label class="fld">${t('observacoes')} ${obsReq?'<span class="req">*</span>':''}</label>
         <textarea id="obs" placeholder="${r.resultado==='NA'?L('Justificação obrigatória…','Justification required…'):(r.resultado==='NC'?L('Descreva a não conformidade…','Describe the non-conformity…'):L('Notas (opcional)…','Notes (optional)…'))}" oninput="setObs(this.value)">${esc(r.obs||"")}</textarea></div>
-      <div style="margin-top:10px">
+      ${showFoto(p)?`<div style="margin-top:10px">
         <label class="fld">${t('fotos_docs')} ${p.rf?'<span class="req">*</span> <span class="small">('+L('obrigatório','required')+')</span>':'<span class="small">('+L('opcional','optional')+')</span>'}</label>
         <div class="photos">
           ${(r.fotos||[]).map((f,i)=>{const o=normFoto(f);return `<div class="photo">${o.img?`<img src="${o.d}">`:`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--light);color:var(--blue);font-size:11px;padding:4px;text-align:center">📄<span style="margin-top:2px;word-break:break-all">${esc(shortName(o.n))}</span></div>`}<button class="del" onclick="delFoto(${i})">×</button></div>`;}).join("")}
           <label class="addphoto">＋<input type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="addFoto(event)"></label>
         </div>
         <div class="small" style="margin-top:4px">${L('Fotos (câmara/galeria) ou documentos (PDF, Word, Excel).','Photos (camera/gallery) or documents (PDF, Word, Excel).')}</div>
-      </div>
+      </div>`:''}
       <div class="hint ${valid?'':'show'}" id="hint">${missMsg(p,r)}</div>
     </div>
     <div class="navbar no-print">
@@ -993,7 +994,7 @@ function editPonto(i){ curPtIdx=i; go("configponto"); }
 function renderConfigPonto(){
   if(!isAdmin||!curFam){ go("config"); return; }
   view="configponto"; btnBack.style.display="inline-block";
-  const novo=curPtIdx<0; const p=novo?{c:"",s:"",s_en:"",t:"",t_en:"",cr:"",cr_en:"",tp:"CNCNA",ob:1,fase:1,min:"",max:"",unid:""}:curFam.pontos[curPtIdx];
+  const novo=curPtIdx<0; const p=novo?{c:"",s:"",s_en:"",t:"",t_en:"",cr:"",cr_en:"",tp:"CNCNA",ob:1,fase:1,foto:1,rf:0,min:"",max:"",unid:""}:curFam.pontos[curPtIdx];
   main.innerHTML=`<h1>${novo?L('Novo ponto','New point'):L('Editar ponto','Edit point')}</h1>
     <div class="card grid">
       <div class="row"><div><label class="fld">${L('Código','Code')}</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
@@ -1008,6 +1009,8 @@ function renderConfigPonto(){
         ${["CNCNA","Numerico","Texto"].map(o=>`<option ${p.tp===o?'selected':''}>${o}</option>`).join("")}
       </select></div>
       <div><label class="fld">${L('Obrigatório','Mandatory')}</label><select id="p_ob"><option value="1" ${p.ob?'selected':''}>${L('Sim','Yes')}</option><option value="0" ${!p.ob?'selected':''}>${L('Não','No')}</option></select></div></div>
+      <div class="row"><div><label class="fld">${L('Campo de foto/documento','Photo/document field')}</label><select id="p_foto"><option value="1" ${showFoto(p)?'selected':''}>${L('Mostrar','Show')}</option><option value="0" ${!showFoto(p)?'selected':''}>${L('Ocultar','Hide')}</option></select></div>
+      <div><label class="fld">${L('Foto obrigatória','Photo required')}</label><select id="p_rf"><option value="0" ${!p.rf?'selected':''}>${L('Não','No')}</option><option value="1" ${p.rf?'selected':''}>${L('Sim','Yes')}</option></select></div></div>
       <div class="row"><div><label class="fld">${L('Mín','Min')} (num.)</label><input id="p_min" value="${p.min??''}"></div>
       <div><label class="fld">${L('Máx','Max')} (num.)</label><input id="p_max" value="${p.max??''}"></div>
       <div><label class="fld">${L('Unidade','Unit')}</label><input id="p_unid" value="${esc(p.unid||'')}"></div></div>
@@ -1016,7 +1019,8 @@ function renderConfigPonto(){
     <button class="btn ghost wide" style="margin-top:8px" onclick="go('configfam')">${t('cancelar')}</button>`;
 }
 function salvarPonto(){
-  const p={ c:val("p_c"), s:val("p_s"), s_en:val("p_sen"), t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, rf:0, fase: parseInt(val("p_fase"))||1 };
+  const mostraFoto = val("p_foto")==="1"?1:0;
+  const p={ c:val("p_c"), s:val("p_s"), s_en:val("p_sen"), t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, foto:mostraFoto, rf: (mostraFoto && val("p_rf")==="1")?1:0, fase: parseInt(val("p_fase"))||1 };
   const mn=val("p_min"), mx=val("p_max"), un=val("p_unid");
   if(mn!=="") p.min=parseFloat(mn.replace(",",".")); if(mx!=="") p.max=parseFloat(mx.replace(",",".")); if(un) p.unid=un;
   if(!p.c||!p.t){ toast(L("Código e título (PT) são obrigatórios.","Code and title (PT) are required."),"err"); return; }
