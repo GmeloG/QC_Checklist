@@ -367,7 +367,7 @@ function renderRegisto(){
 // ===== HOME =====
 function renderHome(){
   const emCurso=DB.filter(i=>i.estado==="Em curso").length, concl=DB.filter(i=>i.estado!=="Em curso").length;
-  const conta = FBuser ? ("Ligado como "+FBuser.email+(isAdmin?" · Administrador":"")) : syncStatus();
+  const conta = FBuser ? (t('ligado_como')+" "+FBuser.email+(isAdmin?" · "+t('administrador'):"")) : syncStatus();
   main.innerHTML=`
     <h1>${t('menu')}</h1>
     <div class="grid">
@@ -767,10 +767,10 @@ let authResolved=false, isAdmin=false, ADMINS=[];
 const uploadedAtt=new Set();
 function cfgValid(){ const c=window.FIREBASE_CONFIG; return !!(c && c.apiKey && String(c.apiKey).indexOf("COLA_AQUI")<0 && c.projectId); }
 function syncStatus(){
-  if(!cfgValid()) return "Local apenas · toque para configurar a nuvem";
-  if(!cloudReady) return "A ligar à nuvem…";
-  if(FBuser) return "Ligado como "+FBuser.email+" · sincronizado";
-  return "Configurado · toque para entrar";
+  if(!cfgValid()) return LANG==='pt'?"Local apenas · toque para configurar a nuvem":"Local only · tap to set up the cloud";
+  if(!cloudReady) return LANG==='pt'?"A ligar à nuvem…":"Connecting to the cloud…";
+  if(FBuser) return t('ligado_como')+" "+FBuser.email;
+  return LANG==='pt'?"Configurado · toque para entrar":"Configured · tap to sign in";
 }
 function initSync(){
   if(!cfgValid()){ authResolved=true; return; }        // sem nuvem: modo local
