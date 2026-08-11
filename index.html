@@ -506,9 +506,12 @@ function renderSeccao(){
   const pts=[]; PONTOS.forEach((p,i)=>{ if(p.s===curSec) pts.push({p,i}); });
   const fase=pts.length?pts[0].p.fase:1;
   const row=o=>{ const r=cur.respostas[o.p.c]||{};
-    const mark=r.concluido?'<span style="color:var(--ok)">✓</span>':(r.resultado==="NC"?'<span style="color:var(--nc)">⚠</span>':(r.resultado==="NA"?'<span style="color:var(--na)">–</span>':'<span style="color:#c3ccd8">○</span>'));
+    const mark = r.resultado==="NC" ? '<b style="color:var(--nc)">NOK</b>'
+      : r.concluido ? '<span style="color:var(--ok)">✓</span>'
+      : r.resultado==="NA" ? '<span style="color:var(--na)">N/A</span>'
+      : '<span style="color:#c3ccd8">○</span>';
     return `<div class="list-item" onclick="curSec='${(o.p.s).replace(/'/g,"\\'")}';idx=${o.i};go('checklist')">
-      <div style="font-size:18px;width:22px;text-align:center">${mark}</div>
+      <div style="font-size:14px;font-weight:800;width:40px;text-align:center">${mark}</div>
       <div class="t"><div><b>${o.p.c}</b> · ${esc(pT(o.p))}</div></div>
       <span style="color:var(--accent);font-size:20px">›</span></div>`;
   };
@@ -529,7 +532,6 @@ function isValid(p,r){
   if(p.tp==="Numerico" && (r.valor===undefined||r.valor===""||isNaN(r.valor))) return false;
   if(p.tp==="Texto" && p.ob && !(r.obs&&r.obs.trim())) return false;
   if(r.resultado==="NC" && !(r.obs&&r.obs.trim())) return false;
-  if(r.resultado==="NA" && !(r.obs&&r.obs.trim())) return false;
   if(p.rf && showFoto(p) && (!r.fotos||!r.fotos.length)) return false;
   if(p.tp==="Numerico" && !isNaN(r.valor) && r.valor!==""){
     if(p.min!==undefined && +r.valor<p.min) return false;
@@ -543,7 +545,6 @@ function missMsg(p,r){
   if(p.tp==="Numerico" && !isNaN(r.valor) && r.valor!=="" && ((p.min!==undefined&&+r.valor<p.min)||(p.max!==undefined&&+r.valor>p.max)))
      return L("Valor fora do critério (","Value out of criterion (")+(p.min!==undefined?"≥ "+p.min:"≤ "+p.max)+" "+p.unid+").";
   if(r.resultado==="NC" && !(r.obs&&r.obs.trim())) return L("Descreva a não conformidade.","Describe the non-conformity.");
-  if(r.resultado==="NA" && !(r.obs&&r.obs.trim())) return L("Justifique o «Não aplicável».","Justify the ‘Not applicable’.");
   if(p.tp==="Texto" && p.ob && !(r.obs&&r.obs.trim())) return L("Preencha o campo obrigatório.","Fill in the required field.");
   if(p.rf && showFoto(p) && (!r.fotos||!r.fotos.length)) return L("Anexe pelo menos uma fotografia ou documento.","Attach at least one photo or document.");
   return "";
@@ -566,7 +567,7 @@ function renderChecklist(){
       <div style="flex:0 0 64px;text-align:center;font-weight:800;color:var(--accent);padding-bottom:14px">${p.unid||""}</div></div>
       <div class="small">${L("Critério","Criterion")}: ${p.min!==undefined?"≥ "+p.min:""}${p.max!==undefined?"≤ "+p.max:""} ${p.unid||""}</div>`;
   }
-  const obsReq=(r.resultado==="NC"||r.resultado==="NA"||(p.tp==="Texto"&&p.ob));
+  const obsReq=(r.resultado==="NC"||(p.tp==="Texto"&&p.ob));
   main.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
       <span class="fase-badge ${p.fase===2?'f2':''}">${t('fase')||'Fase'} ${p.fase}</span>
@@ -582,7 +583,7 @@ function renderChecklist(){
       <div class="crit">${esc(pCr(p))}</div>
       ${resultUI}
       <div style="margin-top:12px"><label class="fld">${t('observacoes')} ${obsReq?'<span class="req">*</span>':''}</label>
-        <textarea id="obs" placeholder="${r.resultado==='NA'?L('Justificação obrigatória…','Justification required…'):(r.resultado==='NC'?L('Descreva a não conformidade…','Describe the non-conformity…'):L('Notas (opcional)…','Notes (optional)…'))}" oninput="setObs(this.value)">${esc(r.obs||"")}</textarea></div>
+        <textarea id="obs" placeholder="${r.resultado==='NC'?L('Descreva a não conformidade…','Describe the non-conformity…'):L('Notas (opcional)…','Notes (optional)…')}" oninput="setObs(this.value)">${esc(r.obs||"")}</textarea></div>
       ${showFoto(p)?`<div style="margin-top:10px">
         <label class="fld">${t('fotos_docs')} ${p.rf?'<span class="req">*</span> <span class="small">('+L('obrigatório','required')+')</span>':'<span class="small">('+L('opcional','optional')+')</span>'}</label>
         <div class="photos">
@@ -626,16 +627,20 @@ function sigBlock(id, existing, label){
 }
 function initSig(id, existing){
   const cv=document.getElementById(id); if(!cv) return;
-  const r=cv.getBoundingClientRect(); cv.width=r.width||600; cv.height=r.height||170;
-  const ctx=cv.getContext("2d"); ctx.lineWidth=2.5; ctx.lineCap="round"; ctx.strokeStyle="#1F3864";
-  _sig={cv,ctx,empty:true,drawing:false};
-  const pos=e=>{const b=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-b.left,y:t.clientY-b.top};};
-  const start=e=>{_sig.drawing=true;_sig.empty=false;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();};
-  const move=e=>{if(!_sig.drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();};
-  const end=()=>{_sig.drawing=false;};
-  cv.onmousedown=start;cv.onmousemove=move;window.onmouseup=end;
-  cv.ontouchstart=start;cv.ontouchmove=move;cv.ontouchend=end;
-  if(existing){ const img=new Image(); img.onload=()=>ctx.drawImage(img,0,0,cv.width,cv.height); img.src=existing; _sig.empty=false; }
+  requestAnimationFrame(()=>{
+    const w=cv.clientWidth||cv.getBoundingClientRect().width||600;
+    const h=cv.clientHeight||170;
+    cv.width=w; cv.height=h;
+    const ctx=cv.getContext("2d"); ctx.lineWidth=2.5; ctx.lineCap="round"; ctx.strokeStyle="#1F3864";
+    _sig={cv,ctx,empty:true,drawing:false};
+    const pos=e=>{const b=cv.getBoundingClientRect();const p=e.touches?e.touches[0]:e;return{x:p.clientX-b.left,y:p.clientY-b.top};};
+    const start=e=>{_sig.drawing=true;_sig.empty=false;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();};
+    const move=e=>{if(!_sig.drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();};
+    const end=()=>{_sig.drawing=false;};
+    cv.onmousedown=start;cv.onmousemove=move;window.onmouseup=end;
+    cv.ontouchstart=start;cv.ontouchmove=move;cv.ontouchend=end;
+    if(existing){ const img=new Image(); img.onload=()=>ctx.drawImage(img,0,0,cv.width,cv.height); img.src=existing; _sig.empty=false; }
+  });
 }
 function clearSig(){ if(_sig.ctx){ _sig.ctx.clearRect(0,0,_sig.cv.width,_sig.cv.height); _sig.empty=true; } }
 function sigGet(existing){ if(_sig.cv && !_sig.empty) return _sig.cv.toDataURL("image/png"); return existing||null; }
