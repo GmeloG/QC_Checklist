@@ -149,6 +149,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
       <div class="sub">Controlo de Qualidade · Quadros Elétricos</div>
     </div>
     <div class="grow"></div>
+    <button id="langBtn" onclick="setLang(LANG==='pt'?'en':'pt')" style="background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px"></button>
     <div class="sub" id="hdrRight" style="text-align:right"></div>
   </header>
   <main id="main"></main>
@@ -156,6 +157,47 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <div class="toast" id="toast"></div>
 
 <script>
+// ===== Idioma (interface) =====
+let LANG=(localStorage.getItem("lang")||"pt");
+const T={
+ pt:{ menu:"Menu", nova_inspecao:"Nova inspeção", nova_desc:"Iniciar uma nova validação",
+   inspecoes:"Inspeções e relatórios", conta:"Conta", limpar_bd:"Limpar base de dados",
+   limpar_desc:"Apagar todos os relatórios (admin)", sobre:"Sobre / versão", config:"Configurador",
+   config_desc:"Famílias e listas de controlo (admin)",
+   familia:"Família de Produto", n_doc:"Nº Documento", n_serie:"Nº Série", projeto:"Projeto",
+   cliente:"Cliente", localizacao:"Localização", inspetor:"Inspetor", nome_inspetor:"Nome do inspetor",
+   iniciar:"Iniciar", preencha_doc_insp:"Preencha o Nº Documento e o inspetor.",
+   visao_geral:"Visão geral", continuar:"Continuar de onde parei", comecar:"Começar a inspeção",
+   ver_resumo:"Ver resumo / concluir", toca_seccao:"Toca numa secção para ver e escolher os pontos.",
+   selecione_ponto:"Selecione um ponto para verificar.", voltar_seccoes:"‹ Voltar às secções",
+   anterior:"‹ Anterior", seguinte:"Seguinte ›", observacoes:"Observações", fotos_docs:"Fotografias ou documentos",
+   opcional:"(opcional)", ponto:"Ponto", de:"de", concluidos:"concluídos",
+   resumo:"Resumo da inspeção", conformes:"Conformes", nao_conf:"Não conf.", na:"N/A", por_validar:"Por validar",
+   prosseguir:"Prosseguir para conclusão", conclusao:"Conclusão", responsavel:"Responsável / assinante",
+   concluir:"Concluir inspeção e gerar relatório", entrar:"Entrar", criar_conta:"Criar conta",
+   voltar:"‹ Voltar", terminar_sessao:"Terminar sessão", mudar_pw:"Mudar a minha palavra-passe",
+   guardar:"Guardar", cancelar:"Cancelar", idioma:"Idioma" },
+ en:{ menu:"Menu", nova_inspecao:"New inspection", nova_desc:"Start a new validation",
+   inspecoes:"Inspections & reports", conta:"Account", limpar_bd:"Clear database",
+   limpar_desc:"Delete all reports (admin)", sobre:"About / version", config:"Configurator",
+   config_desc:"Families and checklists (admin)",
+   familia:"Product family", n_doc:"Document No.", n_serie:"Serial No.", projeto:"Project",
+   cliente:"Customer", localizacao:"Location", inspetor:"Inspector", nome_inspetor:"Inspector name",
+   iniciar:"Start", preencha_doc_insp:"Fill in the Document No. and inspector.",
+   visao_geral:"Overview", continuar:"Continue where I left off", comecar:"Start the inspection",
+   ver_resumo:"View summary / finish", toca_seccao:"Tap a section to see and pick the points.",
+   selecione_ponto:"Select a point to check.", voltar_seccoes:"‹ Back to sections",
+   anterior:"‹ Previous", seguinte:"Next ›", observacoes:"Notes", fotos_docs:"Photos or documents",
+   opcional:"(optional)", ponto:"Point", de:"of", concluidos:"done",
+   resumo:"Inspection summary", conformes:"Conform", nao_conf:"Non-conf.", na:"N/A", por_validar:"Pending",
+   prosseguir:"Proceed to conclusion", conclusao:"Conclusion", responsavel:"Responsible / signer",
+   concluir:"Finish inspection and generate report", entrar:"Sign in", criar_conta:"Create account",
+   voltar:"‹ Back", terminar_sessao:"Sign out", mudar_pw:"Change my password",
+   guardar:"Save", cancelar:"Cancel", idioma:"Language" }
+};
+function t(k){ return (T[LANG]&&T[LANG][k]) || T.pt[k] || k; }
+function setLang(l){ LANG=l; localStorage.setItem("lang",l); render(); }
+
 // ===== Documento / versão =====
 const DOC_CODE="MOD_105_IE_SMF", DOC_VER="02", DOC_FULL="MOD_105_IE_SMF_02";
 const DOC_HIST=[
@@ -163,8 +205,8 @@ const DOC_HIST=[
   {rev:"02", data:"30/07/2026", nota:"Atualização da checklist; campo de dados do projeto; formatação e revisão de pontos.", resp:"Daniel Silva", apr:"Lara Barbosa"},
 ];
 
-// ===== Checklist MOD_105_IE_SMF_02 (45 pontos) — fase 1 até 6.2, fase 2 a partir de 6.3 =====
-const PONTOS=[
+// ===== Checklist BASE MOD_105_IE_SMF_02 (base de todas as famílias) =====
+const BASE=[
  {c:"1.1",s:"1. Documentação",t:"Esquemas elétricos",cr:"Última revisão aprovada disponível e em conformidade com o quadro montado.",tp:"CNCNA",ob:1,rf:1,fase:1},
  {c:"1.2",s:"1. Documentação",t:"Alterações ao Esquema",cr:"Reportar caso aplicável.",tp:"CNCNA",ob:0,rf:0,fase:1},
  {c:"1.3",s:"1. Documentação",t:"Lista de materiais",cr:"Os componentes instalados correspondem à lista de materiais aprovada.",tp:"CNCNA",ob:1,rf:0,fase:1},
@@ -211,14 +253,26 @@ const PONTOS=[
  {c:"7.4",s:"7. Aprovação Final",t:"Aprovação do Controlo da Qualidade",cr:"Quadro aprovado pelo inspetor de qualidade (reverificação nos pontos 7.1 e 7.2).",tp:"CNCNA",ob:1,rf:0,fase:2},
  {c:"7.5",s:"7. Aprovação Final",t:"Registos Fotográficos",cr:"Verificar se foi corretamente colocado no diretório do projeto.",tp:"CNCNA",ob:1,rf:1,fase:2},
 ];
-PONTOS.forEach(p=>p.rf=0); // fotografias nunca obrigatórias (anexar é sempre opcional)
-const N=PONTOS.length;
-const FASE1=PONTOS.filter(p=>p.fase===1), FASE2=PONTOS.filter(p=>p.fase===2);
-const FASE1_LAST=FASE1.length-1; // último índice da Fase 1
+BASE.forEach(p=>p.rf=0); // fotografias nunca obrigatórias (anexar é sempre opcional)
+// Checklist ATIVA (por inspeção/família). Recalculada por setPontos().
+let PONTOS=BASE, N=BASE.length, FASE1=[], FASE2=[], FASE1_LAST=-1;
+function lastFase1(arr){ let l=-1; arr.forEach((p,i)=>{ if((p.fase||1)===1) l=i; }); return l; }
+function setPontos(arr){
+  PONTOS = (arr&&arr.length)? arr : BASE;
+  N = PONTOS.length;
+  FASE1 = PONTOS.filter(p=>(p.fase||1)===1);
+  FASE2 = PONTOS.filter(p=>(p.fase||1)===2);
+  FASE1_LAST = lastFase1(PONTOS);
+}
+setPontos(BASE);
+// Famílias de produto (carregadas do Firestore; a "Base" está sempre disponível)
+let FAMILIAS=[{ nome:"Base (Quadros Elétricos)", pontos:BASE, revisoes:DOC_HIST, docCode:DOC_CODE, docVer:DOC_VER, base:true }];
+function famByName(n){ return FAMILIAS.find(f=>f.nome===n) || FAMILIAS[0]; }
+function clonePts(arr){ return JSON.parse(JSON.stringify(arr)); }
 
 // ===== Estado / persistência =====
 const LS="qc_inspecoes_v2";
-let DB=load(), cur=null, idx=0, view="home", curSec=null;
+let DB=load(), cur=null, idx=0, view="home", curSec=null, curFam=null, curPtIdx=null;
 function load(){ try{return JSON.parse(localStorage.getItem(LS))||[]}catch(e){return[]} }
 function save(){ try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){toast("Armazenamento cheio (fotos grandes).","err");} if(typeof scheduleCloud==="function") scheduleCloud(); }
 function uid(){ return "INS-"+new Date().getFullYear()+"-"+String(DB.length+1).padStart(4,"0"); }
@@ -236,14 +290,15 @@ btnBack.onclick=()=>{
 function go(v){ view=v; window.scrollTo(0,0); render(); }
 
 function render(){
-  hdrRight.innerHTML = (cur?cur.id+"<br>":"") + DOC_FULL;
+  const lb=document.getElementById("langBtn"); if(lb) lb.textContent=LANG.toUpperCase();
+  hdrRight.innerHTML = (cur?cur.id+"<br>":"") + (cur?((cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)):DOC_FULL);
   // BARREIRA DE LOGIN: com a nuvem configurada, só entra autenticado
   if(cfgValid()){
     if(!authResolved) { btnBack.style.display="none"; return renderLoading(); }
     if(!FBuser) { btnBack.style.display="none"; return (view==="registo"?renderRegisto():renderLogin()); }
   }
   btnBack.style.display=(view==="home")?"none":"inline-block";
-  ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync,mudarpw:renderMudarPw}[view]||renderHome)();
+  ({home:renderHome,nova:renderNova,lista:renderLista,overview:renderOverview,seccao:renderSeccao,checklist:renderChecklist,faseend:renderFaseEnd,resumo:renderResumo,assinatura:renderAssinatura,relatorio:renderRelatorio,sync:renderSync,mudarpw:renderMudarPw,config:renderConfig,configfam:renderConfigFam,configponto:renderConfigPonto,configrev:renderConfigRev}[view]||renderHome)();
 }
 function renderLoading(){
   main.innerHTML=`<div class="auth-wrap"><div class="brandmark"><img src="logo.png" alt="Sidel"></div><h1>A ligar…</h1><p class="small">A verificar a sua sessão.</p></div>`;
@@ -286,15 +341,16 @@ function renderHome(){
   const emCurso=DB.filter(i=>i.estado==="Em curso").length, concl=DB.filter(i=>i.estado!=="Em curso").length;
   const conta = FBuser ? ("Ligado como "+FBuser.email+(isAdmin?" · Administrador":"")) : syncStatus();
   main.innerHTML=`
-    <h1>Menu</h1>
+    <h1>${t('menu')}</h1>
     <div class="grid">
-      <button class="menu-btn" onclick="novaInspecao()"><span class="ico">＋</span><span>Nova inspeção<small>Iniciar uma nova validação de quadro</small></span></button>
-      <button class="menu-btn" onclick="go('lista')"><span class="ico">📋</span><span>Inspeções e relatórios<small>${emCurso} em curso · ${concl} concluídas · abrir para editar</small></span></button>
-      <button class="menu-btn" onclick="go('sync')"><span class="ico">👤</span><span>Conta<small>${esc(conta)}</small></span></button>
-      ${isAdmin?`<button class="menu-btn" onclick="clearDB()" style="color:var(--nc)"><span class="ico">🗑️</span><span>Limpar base de dados<small>Apagar todos os relatórios (admin)</small></span></button>`:''}
-      <button class="menu-btn" onclick="sobre()"><span class="ico">ℹ️</span><span>Sobre / versão<small>${DOC_FULL} · histórico de revisões</small></span></button>
+      <button class="menu-btn" onclick="novaInspecao()"><span class="ico">＋</span><span>${t('nova_inspecao')}<small>${t('nova_desc')}</small></span></button>
+      <button class="menu-btn" onclick="go('lista')"><span class="ico">📋</span><span>${t('inspecoes')}<small>${emCurso} · ${concl} ✓</small></span></button>
+      <button class="menu-btn" onclick="go('sync')"><span class="ico">👤</span><span>${t('conta')}<small>${esc(conta)}</small></span></button>
+      ${isAdmin?`<button class="menu-btn" onclick="go('config')"><span class="ico">⚙️</span><span>${t('config')}<small>${t('config_desc')}</small></span></button>`:''}
+      ${isAdmin?`<button class="menu-btn" onclick="clearDB()" style="color:var(--nc)"><span class="ico">🗑️</span><span>${t('limpar_bd')}<small>${t('limpar_desc')}</small></span></button>`:''}
+      <button class="menu-btn" onclick="sobre()"><span class="ico">ℹ️</span><span>${t('sobre')}<small>${DOC_FULL}</small></span></button>
     </div>
-    <p class="small" style="margin-top:16px">Checklist «${DOC_FULL}» · ${N} pontos · Fase 1 (1.1–6.2) e Fase 2 (6.3–7.5).</p>
+    <p class="small" style="margin-top:16px">${FAMILIAS.length} ${LANG==='pt'?'família(s) de produto':'product family(ies)'}.</p>
     <div class="foot">${DOC_FULL}</div>`;
 }
 function sobre(){
@@ -326,25 +382,31 @@ function apagarInspecao(id,ev){ if(ev)ev.stopPropagation(); if(confirm("Apagar e
 
 // ===== NOVA =====
 function renderNova(){
+  const opts=FAMILIAS.map(f=>`<option value="${esc(f.nome)}">${esc(f.nome)}</option>`).join("");
   main.innerHTML=`
-    <h1>Nova inspeção</h1>
+    <h1>${t('nova_inspecao')}</h1>
     <div class="card grid">
-      <div><label class="fld">Nº Documento <span class="req">*</span></label><input id="f_doc" placeholder="ex.: DOC-2026-014"></div>
-      <div><label class="fld">Nº Série</label><input id="f_serie"></div>
-      <div><label class="fld">Projeto</label><input id="f_proj"></div>
-      <div><label class="fld">Cliente</label><input id="f_cli"></div>
-      <div><label class="fld">Localização</label><input id="f_loc"></div>
-      <div><label class="fld">Inspetor <span class="req">*</span></label><input id="f_insp" placeholder="Nome do inspetor"></div>
+      <div><label class="fld">${t('familia')} <span class="req">*</span></label><select id="f_fam">${opts}</select></div>
+      <div><label class="fld">${t('n_doc')} <span class="req">*</span></label><input id="f_doc" placeholder="ex.: DOC-2026-014"></div>
+      <div><label class="fld">${t('n_serie')}</label><input id="f_serie"></div>
+      <div><label class="fld">${t('projeto')}</label><input id="f_proj"></div>
+      <div><label class="fld">${t('cliente')}</label><input id="f_cli"></div>
+      <div><label class="fld">${t('localizacao')}</label><input id="f_loc"></div>
+      <div><label class="fld">${t('inspetor')} <span class="req">*</span></label><input id="f_insp" placeholder="${t('nome_inspetor')}"></div>
     </div>
-    <button class="btn primary wide" onclick="criarInspecao()">Iniciar Fase 1 ›</button>`;
+    <button class="btn primary wide" onclick="criarInspecao()">${t('iniciar')} ›</button>`;
 }
 const val=id=>{const e=document.getElementById(id);return e?e.value.trim():"";};
 function criarInspecao(){
-  const d=val("f_doc"), insp=val("f_insp");
-  if(!d||!insp){ toast("Preencha o Nº Documento e o inspetor.","err"); return; }
-  cur={ id:uid(), doc:d, serie:val("f_serie"), projeto:val("f_proj"), cliente:val("f_cli"), local:val("f_loc"),
-        inspetor:insp, docCode:DOC_FULL, inicio:Date.now(), fase1Fim:null, fim:null, estado:"Em curso",
+  const d=val("f_doc"), insp=val("f_insp"), famNome=val("f_fam");
+  if(!d||!insp){ toast(t('preencha_doc_insp'),"err"); return; }
+  const fam=famByName(famNome);
+  cur={ id:uid(), familia:fam.nome, pontos:clonePts(fam.pontos), revisoes:clonePts(fam.revisoes||DOC_HIST),
+        docCode:fam.docCode||DOC_CODE, docVer:fam.docVer||DOC_VER,
+        doc:d, serie:val("f_serie"), projeto:val("f_proj"), cliente:val("f_cli"), local:val("f_loc"),
+        inspetor:insp, inicio:Date.now(), fase1Fim:null, fim:null, estado:"Em curso",
         respostas:{}, utilizador:"" };
+  setPontos(cur.pontos);
   DB.push(cur); save(); idx=0; go("overview"); toast("Inspeção "+cur.id+" criada.","ok");
 }
 
@@ -359,8 +421,8 @@ function renderLista(){
       <button title="Apagar" style="border:0;background:#f0e2e2;color:#b00;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px" onclick="apagarInspecao('${i.id}',event)">🗑</button>
     </div>`).join("");
 }
-function faseDe(i){ for(const p of PONTOS){ const r=i.respostas[p.c]; if(!r||!r.concluido) return p.fase; } return 2; }
-function abrir(id){ cur=DB.find(i=>i.id===id); if(typeof hydrate==="function") hydrate(cur); if(cur.estado==="Em curso") go("overview"); else go("relatorio"); }
+function faseDe(i){ const arr=(i.pontos&&i.pontos.length)?i.pontos:BASE; for(const p of arr){ const r=i.respostas[p.c]; if(!r||!r.concluido) return p.fase||1; } return 2; }
+function abrir(id){ cur=DB.find(i=>i.id===id); setPontos(cur.pontos||BASE); if(typeof hydrate==="function") hydrate(cur); if(cur.estado==="Em curso") go("overview"); else go("relatorio"); }
 function firstPending(){ for(let k=0;k<N;k++){ const r=cur.respostas[PONTOS[k].c]; if(!r||!r.concluido) return k; } return N-1; }
 
 // ===== VISÃO GERAL DA INSPEÇÃO =====
@@ -387,6 +449,7 @@ function renderOverview(){
       <div class="ov-sub">${esc(cur.cliente||'—')}${cur.projeto?' · '+esc(cur.projeto):''}</div>
       <div class="ov-meta">
         <span class="pill">Fase ${faseDe(cur)}</span>
+        ${cur.familia?`<span class="pill">${esc(cur.familia)}</span>`:''}
         <span class="small">👤 ${esc(cur.inspetor)}</span>
         <span class="small">${cur.id}</span>
       </div>
@@ -471,7 +534,7 @@ function renderChecklist(){
   main.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
       <span class="fase-badge ${p.fase===2?'f2':''}">FASE ${p.fase}</span>
-      <span class="small">${p.fase===1?'Montagem / pré-testes (1.1–6.2)':'Testes finais e aprovação (6.3–7.5)'}</span>
+      <span class="small">${esc(cur.familia||'')}</span>
     </div>
     <div class="progress-wrap">
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -627,7 +690,7 @@ function renderRelatorio(){
     </div>
     <div class="rep">
       <h1>Relatório de Inspeção de Qualidade</h1>
-      <p class="small">Sidel · Checklist de Verificação de Quadros Elétricos · <b>${DOC_FULL}</b> · Emitido em ${new Date().toLocaleDateString("pt-PT")}</p>
+      <p class="small">Sidel · ${esc(cur.familia||'Checklist')} · <b>${(cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)}</b> · Emitido em ${new Date().toLocaleDateString("pt-PT")}</p>
       <div class="kv">
         <div class="k">N.º de inspeção</div><div>${cur.id}</div>
         <div class="k">Nº Documento</div><div>${esc(cur.doc||'—')}</div>
@@ -637,10 +700,10 @@ function renderRelatorio(){
         <div class="k">Inspetor</div><div>${esc(cur.inspetor)}</div>
         <div class="k">Resultado global</div><div class="badge-res ${cur.resultadoGlobal==='Conforme'?'res-C':'res-NC'}"><b>${cur.resultadoGlobal||'—'}</b> (C:${k.C} · NC:${k.NC} · NA:${k.NA})</div>
       </div>
-      <h2>Fase 1 — Montagem e pré-testes (1.1–6.2)</h2>
+      <h2>Fase 1</h2>
       <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(1)}</tbody></table>
-      <h2>Fase 2 — Testes finais e aprovação (6.3–7.5)</h2>
-      <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(2)}</tbody></table>
+      ${PONTOS.some(p=>(p.fase||1)===2)?`<h2>Fase 2</h2>
+      <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(2)}</tbody></table>`:''}
       ${ncs.length?`<h2>Não conformidades (${ncs.length})</h2><table><thead><tr><th>Ponto</th><th>Descrição</th><th>Observação</th></tr></thead><tbody>${ncs.map(p=>`<tr><td>${p.c}</td><td>${esc(p.t)}</td><td>${esc((cur.respostas[p.c].obs)||"")}</td></tr>`).join("")}</tbody></table>`:''}
       ${fotos.length?`<h2>Evidências — fotos e documentos (${fotos.length})</h2><div style="display:flex;flex-wrap:wrap;gap:8px">${fotos.map(o=>`<figure style="margin:0;width:150px">${o.f.img?`<img src="${o.f.d}" style="width:150px;height:110px;object-fit:cover;border:1px solid #ccc;border-radius:6px">`:`<a href="${o.f.d}" download="${esc(o.f.n)}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:150px;height:110px;border:1px solid #ccc;border-radius:6px;background:#eef2f8;color:#1F3864;text-decoration:none;font-size:12px;text-align:center;padding:6px">📄<span style="margin-top:4px;word-break:break-all">${esc(shortName(o.f.n))}</span></a>`}<figcaption class="small">${o.c}</figcaption></figure>`).join("")}</div>`:''}
       <h2>Assinaturas</h2>
@@ -658,11 +721,12 @@ function renderRelatorio(){
       </div>
       <h2>Registo</h2>
       <div class="kv">
+        <div class="k">Família</div><div>${esc(cur.familia||'—')}</div>
         <div class="k">Inspetor responsável</div><div>${esc(cur.inspetor)}</div>
         <div class="k">Início</div><div>${fmt(cur.inicio)}</div>
         <div class="k">Fim da Fase 1</div><div>${fmt(cur.fase1Fim)}</div>
         <div class="k">Conclusão</div><div>${fmt(cur.fim)}</div>
-        <div class="k">Documento / versão</div><div>${DOC_FULL}</div>
+        <div class="k">Documento / versão</div><div>${(cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)}</div>
       </div>
     </div>`;
 }
@@ -686,7 +750,7 @@ function initSync(){
     FBauth=firebase.auth(); FBdb=firebase.firestore();
     FBdb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
     cloudReady=true;
-    FBauth.onAuthStateChanged(u=>{ FBuser=u; authResolved=true; isAdmin=false; if(u){ subscribe(); loadAdmins(); } else if(unsub){unsub();unsub=null;} render(); });
+    FBauth.onAuthStateChanged(u=>{ FBuser=u; authResolved=true; isAdmin=false; if(u){ subscribe(); loadAdmins(); loadFamilias(); } else if(unsub){unsub();unsub=null;} render(); });
   }catch(e){ cloudReady=false; authResolved=true; render(); }
 }
 function loadAdmins(){
@@ -828,6 +892,136 @@ function mudarPw(){
     .then(()=>{ toast("Palavra-passe alterada.","ok"); go("sync"); })
     .catch(e=>toast(trad(e),"err"));
 }
+
+// ================== CONFIGURADOR (admin) ==================
+function slug(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"")||"fam"; }
+function loadFamilias(){
+  if(!cloudReady||!FBuser) return;
+  FBdb.collection("familias").get().then(snap=>{
+    const arr=[FAMILIAS[0]]; // base interna sempre presente
+    snap.forEach(d=>{ const f=d.data(); if(f&&f.nome) arr.push({nome:f.nome, pontos:f.pontos||[], revisoes:f.revisoes||[], docCode:f.docCode||DOC_CODE, docVer:f.docVer||DOC_VER, base:false, _id:d.id}); });
+    FAMILIAS=arr;
+    if(["home","nova","config","configfam"].includes(view)) render();
+  }).catch(()=>{});
+}
+function saveFamilia(fam){
+  if(!cloudReady||!FBuser){ toast("Sem ligação — alteração só neste dispositivo.","err"); return; }
+  const id=fam._id||slug(fam.nome); fam._id=id;
+  FBdb.collection("familias").doc(id).set({nome:fam.nome, pontos:fam.pontos||[], revisoes:fam.revisoes||[], docCode:fam.docCode||DOC_CODE, docVer:fam.docVer||DOC_VER, updatedAt:Date.now()},{merge:true}).catch(e=>toast(trad(e),"err"));
+}
+function deleteFamilia(fam){ if(cloudReady&&FBuser&&fam._id){ FBdb.collection("familias").doc(fam._id).delete().catch(()=>{}); } }
+
+function renderConfig(){
+  if(!isAdmin){ go("home"); return; }
+  view="config"; btnBack.style.display="inline-block";
+  const rows=FAMILIAS.map(f=>`<div class="list-item" onclick="editFam('${esc(f.nome).replace(/'/g,"\\'")}')">
+     <div class="t"><div><b>${esc(f.nome)}</b>${f.base?' <span class="small">(base)</span>':''}</div>
+       <div class="code">${(f.pontos||[]).length} pontos · ${(f.revisoes||[]).length} revisões</div></div>
+     <span style="color:var(--accent);font-size:20px">›</span></div>`).join("");
+  main.innerHTML=`<h1>${t('config')}</h1>
+    <div class="card">
+      <label class="fld">Nova família (nome)</label>
+      <input id="f_newfam" placeholder="ex.: Aidlin, Optifeed, Laser Oven, Conveyors">
+      <label class="fld" style="margin-top:8px">Basear em</label>
+      <select id="f_basefam">${FAMILIAS.map(f=>`<option>${esc(f.nome)}</option>`).join("")}</select>
+      <button class="btn primary wide" style="margin-top:10px" onclick="criarFamilia()">Adicionar família</button>
+    </div>
+    <div class="ov-sec-title">Famílias de produto</div>
+    ${rows}
+    <button class="btn ghost wide" style="margin-top:12px" onclick="go('home')">${t('voltar')}</button>`;
+}
+function criarFamilia(){
+  const nome=val("f_newfam"), base=val("f_basefam");
+  if(!nome){ toast("Indique o nome da família.","err"); return; }
+  if(FAMILIAS.some(f=>f.nome.toLowerCase()===nome.toLowerCase())){ toast("Já existe uma família com esse nome.","err"); return; }
+  const src=famByName(base);
+  const fam={ nome, pontos:clonePts(src.pontos), revisoes:clonePts(src.revisoes||DOC_HIST), docCode:src.docCode||DOC_CODE, docVer:src.docVer||DOC_VER, base:false };
+  FAMILIAS.push(fam); saveFamilia(fam); toast("Família criada.","ok"); render();
+}
+function editFam(n){ curFam=famByName(n); go("configfam"); }
+function renderConfigFam(){
+  if(!isAdmin||!curFam){ go("config"); return; }
+  view="configfam"; btnBack.style.display="inline-block";
+  const ro=!!curFam.base;
+  const rows=(curFam.pontos||[]).map((p,i)=>`<div class="list-item">
+     <div class="t" ${ro?'':`onclick="editPonto(${i})"`} style="cursor:${ro?'default':'pointer'}"><div><b>${esc(p.c)}</b> · ${esc(p.t)}</div>
+       <div class="code">${esc(p.s)} · ${p.tp} · Fase ${p.fase||1}${p.ob?' · obrig.':''}</div></div>
+     ${ro?'':`<button class="btn ghost" style="padding:8px 10px;color:var(--nc)" onclick="delPonto(${i})">🗑</button>`}
+   </div>`).join("");
+  main.innerHTML=`<h1>${esc(curFam.nome)}</h1>
+    ${ro?`<div class="card"><p class="small">Esta é a checklist <b>base</b> e não é editável. No configurador, cria uma família a partir dela para a modificares.</p></div>`:''}
+    <div class="card">
+      <div class="row"><div><label class="fld">Código do documento</label><input id="f_fdoc" value="${esc(curFam.docCode||DOC_CODE)}" ${ro?'disabled':''}></div>
+      <div><label class="fld">Versão</label><input id="f_fver" value="${esc(curFam.docVer||DOC_VER)}" ${ro?'disabled':''}></div></div>
+      ${ro?'':`<button class="btn ghost wide" style="margin-top:8px" onclick="salvarCabFam()">Guardar código/versão</button>`}
+      <button class="btn accent wide" style="margin-top:8px" onclick="go('configrev')">Editar histórico de revisões</button>
+    </div>
+    <div class="ov-sec-title">Pontos (${(curFam.pontos||[]).length})</div>
+    ${rows}
+    ${ro?'':`<button class="btn primary wide" style="margin-top:10px" onclick="editPonto(-1)">＋ Adicionar ponto</button>`}
+    ${ro?'':`<button class="btn ghost wide" style="margin-top:8px;color:var(--nc)" onclick="apagarFamilia()">Apagar família</button>`}
+    <button class="btn ghost wide" style="margin-top:8px" onclick="go('config')">${t('voltar')}</button>`;
+}
+function salvarCabFam(){ curFam.docCode=val("f_fdoc"); curFam.docVer=val("f_fver"); saveFamilia(curFam); toast("Guardado.","ok"); }
+function apagarFamilia(){ if(curFam.base){toast("A base não pode ser apagada.","err");return;} if(confirm("Apagar a família «"+curFam.nome+"»?")){ deleteFamilia(curFam); FAMILIAS=FAMILIAS.filter(f=>f!==curFam); curFam=null; go("config"); } }
+function delPonto(i){ if(confirm("Apagar este ponto?")){ curFam.pontos.splice(i,1); saveFamilia(curFam); render(); } }
+function editPonto(i){ curPtIdx=i; go("configponto"); }
+function renderConfigPonto(){
+  if(!isAdmin||!curFam){ go("config"); return; }
+  view="configponto"; btnBack.style.display="inline-block";
+  const novo=curPtIdx<0; const p=novo?{c:"",s:"",t:"",cr:"",tp:"CNCNA",ob:1,fase:1,min:"",max:"",unid:""}:curFam.pontos[curPtIdx];
+  main.innerHTML=`<h1>${novo?'Novo ponto':'Editar ponto'}</h1>
+    <div class="card grid">
+      <div class="row"><div><label class="fld">Código</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
+      <div><label class="fld">Fase</label><select id="p_fase"><option value="1" ${(p.fase||1)==1?'selected':''}>1</option><option value="2" ${(p.fase||1)==2?'selected':''}>2</option></select></div></div>
+      <div><label class="fld">Secção</label><input id="p_s" value="${esc(p.s)}" placeholder="ex.: 1. Documentação"></div>
+      <div><label class="fld">Título</label><input id="p_t" value="${esc(p.t)}"></div>
+      <div><label class="fld">Critério de aceitação</label><textarea id="p_cr">${esc(p.cr)}</textarea></div>
+      <div class="row"><div><label class="fld">Tipo de resposta</label><select id="p_tp">
+        ${["CNCNA","Numerico","Texto"].map(o=>`<option ${p.tp===o?'selected':''}>${o}</option>`).join("")}
+      </select></div>
+      <div><label class="fld">Obrigatório</label><select id="p_ob"><option value="1" ${p.ob?'selected':''}>Sim</option><option value="0" ${!p.ob?'selected':''}>Não</option></select></div></div>
+      <div class="row"><div><label class="fld">Mín (num.)</label><input id="p_min" value="${p.min??''}"></div>
+      <div><label class="fld">Máx (num.)</label><input id="p_max" value="${p.max??''}"></div>
+      <div><label class="fld">Unidade</label><input id="p_unid" value="${esc(p.unid||'')}"></div></div>
+    </div>
+    <button class="btn primary wide" onclick="salvarPonto()">${t('guardar')}</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="go('configfam')">${t('cancelar')}</button>`;
+}
+function salvarPonto(){
+  const p={ c:val("p_c"), s:val("p_s"), t:val("p_t"), cr:val("p_cr"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, rf:0, fase: parseInt(val("p_fase"))||1 };
+  const mn=val("p_min"), mx=val("p_max"), un=val("p_unid");
+  if(mn!=="") p.min=parseFloat(mn.replace(",",".")); if(mx!=="") p.max=parseFloat(mx.replace(",",".")); if(un) p.unid=un;
+  if(!p.c||!p.t){ toast("Código e título são obrigatórios.","err"); return; }
+  if(curPtIdx<0) curFam.pontos.push(p); else curFam.pontos[curPtIdx]=p;
+  saveFamilia(curFam); toast("Ponto guardado.","ok"); go("configfam");
+}
+function renderConfigRev(){
+  if(!isAdmin||!curFam){ go("config"); return; }
+  view="configrev"; btnBack.style.display="inline-block";
+  const rows=(curFam.revisoes||[]).map((h,i)=>`<div class="list-item">
+     <div class="t"><div><b>Rev ${esc(h.rev)}</b> · ${esc(h.data)}</div><div class="code">${esc(h.nota)}${h.resp?' · '+esc(h.resp):''}</div></div>
+     <button class="btn ghost" style="padding:8px 10px" onclick="editRev(${i})">✎</button>
+     <button class="btn ghost" style="padding:8px 10px;color:var(--nc)" onclick="delRev(${i})">🗑</button></div>`).join("");
+  main.innerHTML=`<h1>Histórico de revisões</h1>
+    <p class="small" style="margin-top:-6px;margin-bottom:10px">${esc(curFam.nome)}</p>
+    ${rows||'<p class="small">Sem revisões.</p>'}
+    <button class="btn primary wide" style="margin-top:10px" onclick="editRev(-1)">＋ Adicionar revisão</button>
+    <button class="btn ghost wide" style="margin-top:8px" onclick="go('configfam')">${t('voltar')}</button>`;
+}
+function editRev(i){
+  const novo=i<0; const h=novo?{rev:"",data:"",nota:"",resp:"",apr:""}:curFam.revisoes[i];
+  const rev=prompt("Revisão (ex.: 03):", h.rev); if(rev===null)return;
+  const data=prompt("Data (dd/mm/aaaa):", h.data||new Date().toLocaleDateString("pt-PT")); if(data===null)return;
+  const nota=prompt("Natureza da mudança:", h.nota); if(nota===null)return;
+  const resp=prompt("Responsável:", h.resp); if(resp===null)return;
+  const apr=prompt("Aprovado por:", h.apr); if(apr===null)return;
+  const obj={rev:rev.trim(),data:data.trim(),nota:nota.trim(),resp:resp.trim(),apr:apr.trim()};
+  if(!curFam.revisoes) curFam.revisoes=[];
+  if(novo) curFam.revisoes.push(obj); else curFam.revisoes[i]=obj;
+  saveFamilia(curFam); render();
+}
+function delRev(i){ if(confirm("Apagar revisão?")){ curFam.revisoes.splice(i,1); saveFamilia(curFam); render(); } }
 
 // ===== PWA =====
 if("serviceWorker" in navigator && location.protocol!=="file:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
