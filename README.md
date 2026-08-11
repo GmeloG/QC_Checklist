@@ -38,9 +38,19 @@ relatórios em qualquer dispositivo, ativa o Firebase (gratuito):
          allow read, write: if request.auth != null;
          match /anexos/{aid} { allow read, write: if request.auth != null; }
        }
+       match /config/versoes {
+         allow read: if request.auth != null;
+         allow write: if request.auth != null &&
+           request.auth.token.email in get(/databases/$(database)/documents/config/app).data.admins;
+       }
        match /config/{doc} {
-         allow read: if request.auth != null;   // lista de administradores
+         allow read: if request.auth != null;   // lista de administradores (config/app)
          allow write: if false;                 // editar só na consola
+       }
+       match /familias/{id} {
+         allow read: if request.auth != null;
+         allow write: if request.auth != null &&
+           request.auth.token.email in get(/databases/$(database)/documents/config/app).data.admins;
        }
      }
    }
