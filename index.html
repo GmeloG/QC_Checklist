@@ -196,6 +196,9 @@ const T={
    guardar:"Save", cancelar:"Cancel", idioma:"Language" }
 };
 function t(k){ return (T[LANG]&&T[LANG][k]) || T.pt[k] || k; }
+function L(pt,en){ return LANG==='en'?en:pt; }
+function estadoLabel(e){ const m={"Em curso":["Em curso","In progress"],"Concluída":["Concluída","Completed"],"A aguardar aprovação":["A aguardar aprovação","Awaiting approval"],"Aprovada":["Aprovada","Approved"],"Rejeitada":["Rejeitada","Rejected"]}; return m[e]?L(m[e][0],m[e][1]):e; }
+function resGlobalLabel(v){ return v==="Conforme"?L("Conforme","Conform"):v==="Não conforme"?L("Não conforme","Non-conform"):(v||"—"); }
 function setLang(l){ LANG=l; localStorage.setItem("lang",l); render(); }
 Object.assign(T.pt,{ ligado_como:"Ligado como", perfil:"Perfil", administrador:"Administrador", inspetor_perfil:"Inspetor",
   sync_desc:"Os relatórios sincronizam automaticamente entre os teus dispositivos. Funciona offline e envia quando houver ligação.",
@@ -397,18 +400,18 @@ function sobre(){
 }
 function novaInspecao(){ cur=null; go("nova"); }
 function clearDB(){
-  if(!isAdmin){ toast("Apenas administradores podem limpar a base de dados.","err"); return; }
-  if(!confirm("ADMINISTRADOR: apagar TODOS os relatórios (neste dispositivo e na nuvem)? Ação irreversível.")) return;
+  if(!isAdmin){ toast(L("Apenas administradores podem limpar a base de dados.","Only administrators can clear the database."),"err"); return; }
+  if(!confirm(L("ADMINISTRADOR: apagar TODOS os relatórios (neste dispositivo e na nuvem)? Ação irreversível.","ADMIN: delete ALL reports (on this device and in the cloud)? This cannot be undone."))) return;
   limparTudo();
 }
 async function limparTudo(){
   const ids=DB.map(i=>i.id); DB=[]; cur=null;
   try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){}
-  toast("A limpar…","ok"); go("home");
-  if(cloudReady&&FBuser){ for(const id of ids){ try{ await FBdb.collection("inspecoes").doc(id).delete(); }catch(e){} } toast("Base de dados limpa.","ok"); if(view==="home")render(); }
+  toast(L("A limpar…","Clearing…"),"ok"); go("home");
+  if(cloudReady&&FBuser){ for(const id of ids){ try{ await FBdb.collection("inspecoes").doc(id).delete(); }catch(e){} } toast(L("Base de dados limpa.","Database cleared."),"ok"); if(view==="home")render(); }
 }
-function editarInspecao(){ if(!cur)return; cur.estado="Em curso"; save(); idx=0; toast("Modo de edição — pode alterar as respostas.","ok"); go("checklist"); }
-function apagarInspecao(id,ev){ if(ev)ev.stopPropagation(); if(confirm("Apagar este relatório?")){ DB=DB.filter(i=>i.id!==id); save(); if(typeof apagarNuvem==="function") apagarNuvem(id); if(cur&&cur.id===id)cur=null; toast("Relatório apagado.","ok"); go("lista"); } }
+function editarInspecao(){ if(!cur)return; cur.estado="Em curso"; save(); idx=0; toast(L("Modo de edição — pode alterar as respostas.","Edit mode — you can change the answers."),"ok"); go(cur.pontos?"overview":"checklist"); }
+function apagarInspecao(id,ev){ if(ev)ev.stopPropagation(); if(confirm(L("Apagar este relatório?","Delete this report?"))){ DB=DB.filter(i=>i.id!==id); save(); if(typeof apagarNuvem==="function") apagarNuvem(id); if(cur&&cur.id===id)cur=null; toast(L("Relatório apagado.","Report deleted."),"ok"); go("lista"); } }
 
 // ===== NOVA =====
 function renderNova(){
@@ -442,13 +445,13 @@ function criarInspecao(){
 
 // ===== LISTA =====
 function renderLista(){
-  if(!DB.length){ main.innerHTML=`<h1>Inspeções</h1><p class="small">Ainda não há inspeções. Crie uma nova no menu.</p>`; return; }
+  if(!DB.length){ main.innerHTML=`<h1>${t('inspecoes')}</h1><p class="small">${L('Ainda não há inspeções. Crie uma nova no menu.','No inspections yet. Create one from the menu.')}</p>`; return; }
   const norm=s=>s.toLowerCase().replace(/ /g,"").replace(/í/g,"i").replace(/é/g,"e").replace(/ç/g,"c").replace(/ã/g,"a");
-  main.innerHTML=`<h1>Inspeções</h1>`+[...DB].reverse().map(i=>`
+  main.innerHTML=`<h1>${t('inspecoes')}</h1>`+[...DB].reverse().map(i=>`
     <div class="list-item" onclick="abrir('${i.id}')">
-      <div class="t"><div><b>${esc(i.doc||i.quadro||i.id)}</b></div><div class="code">${i.id} · ${esc(i.inspetor)} · ${new Date(i.inicio).toLocaleDateString("pt-PT")}</div></div>
-      <span class="pill ${norm(i.estado)}">${i.estado}${i.estado==="Em curso"?" · Fase "+faseDe(i):""}</span>
-      <button title="Apagar" style="border:0;background:#f0e2e2;color:#b00;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px" onclick="apagarInspecao('${i.id}',event)">🗑</button>
+      <div class="t"><div><b>${esc(i.doc||i.quadro||i.id)}</b></div><div class="code">${i.id} · ${esc(i.inspetor)} · ${new Date(i.inicio).toLocaleDateString(LANG==='en'?'en-GB':'pt-PT')}</div></div>
+      <span class="pill ${norm(i.estado)}">${estadoLabel(i.estado)}${i.estado==="Em curso"?" · "+t('fase')+" "+faseDe(i):""}</span>
+      <button title="${L('Apagar','Delete')}" style="border:0;background:#f0e2e2;color:#b00;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px" onclick="apagarInspecao('${i.id}',event)">🗑</button>
     </div>`).join("");
 }
 function faseDe(i){ const arr=(i.pontos&&i.pontos.length)?i.pontos:BASE; for(const p of arr){ const r=i.respostas[p.c]; if(!r||!r.concluido) return p.fase||1; } return 2; }
@@ -478,21 +481,20 @@ function renderOverview(){
       <div class="ov-doc">${esc(cur.doc||cur.id)}</div>
       <div class="ov-sub">${esc(cur.cliente||'—')}${cur.projeto?' · '+esc(cur.projeto):''}</div>
       <div class="ov-meta">
-        <span class="pill">Fase ${faseDe(cur)}</span>
+        <span class="pill">${t('fase')} ${faseDe(cur)}</span>
         ${cur.familia?`<span class="pill">${esc(cur.familia)}</span>`:''}
         <span class="small">👤 ${esc(cur.inspetor)}</span>
         <span class="small">${cur.id}</span>
       </div>
     </div>
-    <button class="btn primary wide" onclick="curSec=null;idx=${fp};go('checklist')">${done? 'Continuar de onde parei ›':'Começar a inspeção ›'}</button>
-    <div class="ov-sec-title">Fase 1 · Montagem e pré-testes</div>
+    <button class="btn primary wide" onclick="curSec=null;idx=${fp};go('checklist')">${done? t('continuar')+' ›':t('comecar')+' ›'}</button>
+    <div class="ov-sec-title">${t('fase')} 1${grupo(2)?L(' · Montagem e pré-testes',' · Assembly & pre-tests'):''}</div>
     ${grupo(1)}
-    <div class="ov-sec-title">Fase 2 · Testes finais e aprovação</div>
-    ${grupo(2)}
+    ${grupo(2)?`<div class="ov-sec-title">${t('fase')} 2${L(' · Testes finais e aprovação',' · Final tests & approval')}</div>${grupo(2)}`:''}
     <div style="margin-top:12px">
-      ${done? `<button class="btn ghost wide" onclick="go('resumo')">Ver resumo / concluir ›</button>`:''}
+      ${done? `<button class="btn ghost wide" onclick="go('resumo')">${t('ver_resumo')} ›</button>`:''}
     </div>
-    <p class="small" style="margin-top:8px;text-align:center">Toca numa secção para ver e escolher os pontos.</p>`;
+    <p class="small" style="margin-top:8px;text-align:center">${t('toca_seccao')}</p>`;
 }
 function abrirSeccao(s){ curSec=s; go("seccao"); }
 function renderSeccao(){
@@ -532,14 +534,14 @@ function isValid(p,r){
   return true;
 }
 function missMsg(p,r){
-  if((p.tp==="CNCNA"||p.tp==="SimNao") && !r.resultado) return "Selecione um resultado.";
-  if(p.tp==="Numerico" && (r.valor===undefined||r.valor===""||isNaN(r.valor))) return "Introduza um valor numérico.";
+  if((p.tp==="CNCNA"||p.tp==="SimNao") && !r.resultado) return L("Selecione um resultado.","Select a result.");
+  if(p.tp==="Numerico" && (r.valor===undefined||r.valor===""||isNaN(r.valor))) return L("Introduza um valor numérico.","Enter a numeric value.");
   if(p.tp==="Numerico" && !isNaN(r.valor) && r.valor!=="" && ((p.min!==undefined&&+r.valor<p.min)||(p.max!==undefined&&+r.valor>p.max)))
-     return "Valor fora do critério ("+(p.min!==undefined?"≥ "+p.min:"≤ "+p.max)+" "+p.unid+").";
-  if(r.resultado==="NC" && !(r.obs&&r.obs.trim())) return "Descreva a não conformidade.";
-  if(r.resultado==="NA" && !(r.obs&&r.obs.trim())) return "Justifique o «Não aplicável».";
-  if(p.tp==="Texto" && p.ob && !(r.obs&&r.obs.trim())) return "Preencha o campo obrigatório.";
-  if(p.rf && (!r.fotos||!r.fotos.length)) return "Anexe pelo menos uma fotografia ou documento.";
+     return L("Valor fora do critério (","Value out of criterion (")+(p.min!==undefined?"≥ "+p.min:"≤ "+p.max)+" "+p.unid+").";
+  if(r.resultado==="NC" && !(r.obs&&r.obs.trim())) return L("Descreva a não conformidade.","Describe the non-conformity.");
+  if(r.resultado==="NA" && !(r.obs&&r.obs.trim())) return L("Justifique o «Não aplicável».","Justify the ‘Not applicable’.");
+  if(p.tp==="Texto" && p.ob && !(r.obs&&r.obs.trim())) return L("Preencha o campo obrigatório.","Fill in the required field.");
+  if(p.rf && (!r.fotos||!r.fotos.length)) return L("Anexe pelo menos uma fotografia ou documento.","Attach at least one photo or document.");
   return "";
 }
 function doneInFase(f){ return PONTOS.filter(p=>p.fase===f && cur.respostas[p.c] && cur.respostas[p.c].concluido).length; }
@@ -553,12 +555,12 @@ function renderChecklist(){
   const pct=Math.round(done/total*100);
   let resultUI="";
   if(p.tp==="CNCNA"){
-    resultUI=`<div class="results">${["C","NC","NA"].map(o=>`<button class="res-btn ${o} ${r.resultado===o?'active':''}" onclick="setRes('${o}')">${o==="C"?"Conforme":o==="NC"?"Não conforme":"N/A"}</button>`).join("")}</div>`;
+    resultUI=`<div class="results">${["C","NC","NA"].map(o=>`<button class="res-btn ${o} ${r.resultado===o?'active':''}" onclick="setRes('${o}')">${o==="C"?L("Conforme","Conform"):o==="NC"?L("Não conforme","Non-conform"):"N/A"}</button>`).join("")}</div>`;
   } else if(p.tp==="Numerico"){
-    resultUI=`<div class="row" style="align-items:flex-end"><div><label class="fld">Valor medido <span class="req">*</span></label>
+    resultUI=`<div class="row" style="align-items:flex-end"><div><label class="fld">${L("Valor medido","Measured value")} <span class="req">*</span></label>
       <input type="number" step="any" inputmode="decimal" id="numv" value="${r.valor??''}" oninput="setNum(this.value)"></div>
       <div style="flex:0 0 64px;text-align:center;font-weight:800;color:var(--accent);padding-bottom:14px">${p.unid||""}</div></div>
-      <div class="small">Critério: ${p.min!==undefined?"≥ "+p.min:""}${p.max!==undefined?"≤ "+p.max:""} ${p.unid||""}</div>`;
+      <div class="small">${L("Critério","Criterion")}: ${p.min!==undefined?"≥ "+p.min:""}${p.max!==undefined?"≤ "+p.max:""} ${p.unid||""}</div>`;
   }
   const obsReq=(r.resultado==="NC"||r.resultado==="NA"||(p.tp==="Texto"&&p.ob));
   main.innerHTML=`
@@ -575,22 +577,22 @@ function renderChecklist(){
       <div><b>${p.c}</b> · <b>${esc(pT(p))}</b></div>
       <div class="crit">${esc(pCr(p))}</div>
       ${resultUI}
-      <div style="margin-top:12px"><label class="fld">Observações ${obsReq?'<span class="req">*</span>':''}</label>
-        <textarea id="obs" placeholder="${r.resultado==='NA'?'Justificação obrigatória…':(r.resultado==='NC'?'Descreva a não conformidade…':'Notas (opcional)…')}" oninput="setObs(this.value)">${esc(r.obs||"")}</textarea></div>
+      <div style="margin-top:12px"><label class="fld">${t('observacoes')} ${obsReq?'<span class="req">*</span>':''}</label>
+        <textarea id="obs" placeholder="${r.resultado==='NA'?L('Justificação obrigatória…','Justification required…'):(r.resultado==='NC'?L('Descreva a não conformidade…','Describe the non-conformity…'):L('Notas (opcional)…','Notes (optional)…'))}" oninput="setObs(this.value)">${esc(r.obs||"")}</textarea></div>
       <div style="margin-top:10px">
-        <label class="fld">Fotografias ou documentos ${p.rf?'<span class="req">*</span> <span class="small">(obrigatório)</span>':'<span class="small">(opcional)</span>'}</label>
+        <label class="fld">${t('fotos_docs')} ${p.rf?'<span class="req">*</span> <span class="small">('+L('obrigatório','required')+')</span>':'<span class="small">('+L('opcional','optional')+')</span>'}</label>
         <div class="photos">
           ${(r.fotos||[]).map((f,i)=>{const o=normFoto(f);return `<div class="photo">${o.img?`<img src="${o.d}">`:`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--light);color:var(--blue);font-size:11px;padding:4px;text-align:center">📄<span style="margin-top:2px;word-break:break-all">${esc(shortName(o.n))}</span></div>`}<button class="del" onclick="delFoto(${i})">×</button></div>`;}).join("")}
           <label class="addphoto">＋<input type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="addFoto(event)"></label>
         </div>
-        <div class="small" style="margin-top:4px">Fotos (câmara/galeria) ou documentos (PDF, Word, Excel).</div>
+        <div class="small" style="margin-top:4px">${L('Fotos (câmara/galeria) ou documentos (PDF, Word, Excel).','Photos (camera/gallery) or documents (PDF, Word, Excel).')}</div>
       </div>
       <div class="hint ${valid?'':'show'}" id="hint">${missMsg(p,r)}</div>
     </div>
     <div class="navbar no-print">
-      <button class="btn ghost" ${idx===0?'disabled':''} onclick="prev()">‹ Anterior</button>
-      ${idx<N-1 ? `<button class="btn primary" id="next" onclick="next()">Seguinte ›</button>`
-                : `<button class="btn accent" onclick="irResumo()">Ver resumo ›</button>`}
+      <button class="btn ghost" ${idx===0?'disabled':''} onclick="prev()">${t('anterior')}</button>
+      ${idx<N-1 ? `<button class="btn primary" id="next" onclick="next()">${t('seguinte')}</button>`
+                : `<button class="btn accent" onclick="irResumo()">${t('ver_resumo')} ›</button>`}
     </div>`;
 }
 function persist(concluido){ const p=PONTOS[idx]; const r=Object.assign({},cur.respostas[p.c]||{}); r.concluido=(concluido!==undefined?concluido:isValid(p,r)); cur.respostas[p.c]=r; save(); }
@@ -614,9 +616,9 @@ function irResumo(){ persist(isValid(PONTOS[idx],resp())); go("resumo"); }
 // ===== Assinatura no ecrã (reutilizável) =====
 let _sig={cv:null,ctx:null,empty:true,drawing:false};
 function sigBlock(id, existing, label){
-  return `<label class="fld">${label||"Assinatura"}</label>
+  return `<label class="fld">${label||L("Assinatura","Signature")}</label>
     <canvas class="sig-pad" id="${id}"></canvas>
-    <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" onclick="clearSig()">Limpar assinatura</button></div>`;
+    <div class="row" style="margin-top:8px"><button class="btn ghost" type="button" onclick="clearSig()">${L("Limpar assinatura","Clear signature")}</button></div>`;
 }
 function initSig(id, existing){
   const cv=document.getElementById(id); if(!cv) return;
@@ -638,28 +640,28 @@ function sigGet(existing){ if(_sig.cv && !_sig.empty) return _sig.cv.toDataURL("
 function renderFaseEnd(){
   const pend=pendFase(1);
   main.innerHTML=`
-    <h1>Fim da Fase 1</h1>
+    <h1>${L('Fim da Fase 1','End of Phase 1')}</h1>
     <div class="card" style="text-align:center">
       <div class="big-ok">${pend.length?'⚠️':'✓'}</div>
-      <p><b>${pend.length? pend.length+' ponto(s) obrigatório(s) por validar na Fase 1' : 'Fase 1 concluída'}</b></p>
-      <p class="small">A Fase 1 cobre os pontos 1.1 a 6.2 (montagem e pré-testes). A Fase 2 (6.3 a 7.5) é a fase de testes finais e aprovação.</p>
+      <p><b>${pend.length? pend.length+L(' ponto(s) obrigatório(s) por validar na Fase 1',' mandatory point(s) still to validate in Phase 1') : L('Fase 1 concluída','Phase 1 completed')}</b></p>
+      <p class="small">${L('A Fase 2 é a fase de testes finais e aprovação.','Phase 2 is the final tests and approval stage.')}</p>
     </div>
-    ${pend.length?`<div class="card">${pend.map(p=>`<div class="pending" onclick="irPonto('${p.c}')">⚠️ <b>${p.c}</b> · ${esc(p.t)}</div>`).join("")}</div>`:''}
+    ${pend.length?`<div class="card">${pend.map(p=>`<div class="pending" onclick="irPonto('${p.c}')">⚠️ <b>${p.c}</b> · ${esc(pT(p))}</div>`).join("")}</div>`:''}
     <div class="card">
-      <label class="fld">Responsável pela Fase 1</label>
-      <input id="f_userF1" value="${esc(cur.utilizadorF1||cur.inspetor||'')}" placeholder="Nome de quem valida a Fase 1">
-      ${sigBlock("sigF1", cur.assinaturaF1, "Assinatura da Fase 1 (assine no ecrã)")}
+      <label class="fld">${L('Responsável pela Fase 1','Responsible for Phase 1')}</label>
+      <input id="f_userF1" value="${esc(cur.utilizadorF1||cur.inspetor||'')}" placeholder="${L('Nome de quem valida a Fase 1','Name of who validates Phase 1')}">
+      ${sigBlock("sigF1", cur.assinaturaF1, L("Assinatura da Fase 1 (assine no ecrã)","Phase 1 signature (sign on screen)"))}
     </div>
     <div class="grid">
-      <button class="btn primary wide" onclick="continuarFase2()">Continuar para a Fase 2 ›</button>
-      <button class="btn ghost wide" onclick="guardarSair()">Guardar e sair (retomar depois)</button>
+      <button class="btn primary wide" onclick="continuarFase2()">${L('Continuar para a Fase 2','Continue to Phase 2')} ›</button>
+      <button class="btn ghost wide" onclick="guardarSair()">${L('Guardar e sair (retomar depois)','Save and exit (resume later)')}</button>
     </div>
-    ${pend.length?'<p class="small" style="text-align:center">Pode avançar, mas o relatório final só é emitido com todos os pontos obrigatórios validados.</p>':''}`;
+    ${pend.length?'<p class="small" style="text-align:center">'+L('Pode avançar, mas o relatório final só é emitido com todos os pontos obrigatórios validados.','You may proceed, but the final report is only issued with all mandatory points validated.')+'</p>':''}`;
   initSig("sigF1", cur.assinaturaF1);
 }
 function guardarFase1(){ const u=val("f_userF1"); if(u)cur.utilizadorF1=u; cur.assinaturaF1=sigGet(cur.assinaturaF1); if(!cur.fase1Fim && pendFase(1).length===0) cur.fase1Fim=Date.now(); save(); }
 function continuarFase2(){ guardarFase1(); idx=FASE1_LAST+1; go("checklist"); }
-function guardarSair(){ guardarFase1(); toast("Progresso guardado.","ok"); go("home"); }
+function guardarSair(){ guardarFase1(); toast(L("Progresso guardado.","Progress saved."),"ok"); go("home"); }
 function irPonto(c){ idx=PONTOS.findIndex(p=>p.c===c); go("checklist"); }
 
 // ===== RESUMO =====
@@ -667,45 +669,45 @@ function counts(){ let C=0,NC=0,NA=0; PONTOS.forEach(p=>{const r=cur.respostas[p
 function renderResumo(){
   const k=counts();
   main.innerHTML=`
-    <h1>Resumo da inspeção</h1>
+    <h1>${t('resumo')}</h1>
     <div class="card"><div class="counter-grid">
-      <div class="counter c-C"><div class="n">${k.C}</div><div class="l">Conformes</div></div>
-      <div class="counter c-NC"><div class="n">${k.NC}</div><div class="l">Não conf.</div></div>
+      <div class="counter c-C"><div class="n">${k.C}</div><div class="l">${t('conformes')}</div></div>
+      <div class="counter c-NC"><div class="n">${k.NC}</div><div class="l">${t('nao_conf')}</div></div>
       <div class="counter c-NA"><div class="n">${k.NA}</div><div class="l">N/A</div></div>
-      <div class="counter c-P"><div class="n">${k.P}</div><div class="l">Por validar</div></div>
+      <div class="counter c-P"><div class="n">${k.P}</div><div class="l">${t('por_validar')}</div></div>
     </div></div>
-    ${k.pend.length?`<h2>Pontos obrigatórios por validar</h2>${k.pend.map(p=>`<div class="pending" onclick="irPonto('${p.c}')">⚠️ <b>${p.c}</b> · ${esc(p.t)} <span class="small">(Fase ${p.fase})</span></div>`).join("")}`:`<div class="card" style="border-color:var(--okbg)"><b style="color:var(--ok)">✓ Todos os pontos obrigatórios validados.</b></div>`}
-    <button class="btn primary wide" ${k.P>0?'disabled':''} onclick="go('assinatura')">Prosseguir para conclusão ›</button>
-    ${k.P>0?'<p class="small" style="text-align:center">Conclua os pontos obrigatórios em falta para emitir o relatório.</p>':''}`;
+    ${k.pend.length?`<h2>${L('Pontos obrigatórios por validar','Mandatory points to validate')}</h2>${k.pend.map(p=>`<div class="pending" onclick="irPonto('${p.c}')">⚠️ <b>${p.c}</b> · ${esc(pT(p))} <span class="small">(${t('fase')} ${p.fase})</span></div>`).join("")}`:`<div class="card" style="border-color:var(--okbg)"><b style="color:var(--ok)">✓ ${L('Todos os pontos obrigatórios validados.','All mandatory points validated.')}</b></div>`}
+    <button class="btn primary wide" ${k.P>0?'disabled':''} onclick="go('assinatura')">${t('prosseguir')} ›</button>
+    ${k.P>0?'<p class="small" style="text-align:center">'+L('Conclua os pontos obrigatórios em falta para emitir o relatório.','Complete the missing mandatory points to issue the report.')+'</p>':''}`;
 }
 
 // ===== CONCLUSÃO (utilizador + assinatura Fase 2) =====
 function renderAssinatura(){
   main.innerHTML=`
-    <h1>Conclusão — Fase 2</h1>
+    <h1>${L('Conclusão — Fase 2','Conclusion — Phase 2')}</h1>
     <div class="card">
-      <p class="small">Reveja e confirme o responsável e assine a Fase 2 antes de gerar o relatório.</p>
-      <label class="fld">Responsável / assinante <span class="req">*</span></label>
-      <input id="f_user" value="${esc(cur.utilizador||cur.inspetor||'')}" placeholder="Nome do utilizador">
-      ${sigBlock("sigF2", cur.assinaturaF2, "Assinatura da Fase 2 (assine no ecrã)")}
-      <p class="small" style="margin-top:8px">Inspeção ${cur.id} · Documento ${esc(cur.doc||'')} · ${DOC_FULL}</p>
+      <p class="small">${L('Reveja e confirme o responsável e assine a Fase 2 antes de gerar o relatório.','Review and confirm the responsible person and sign Phase 2 before generating the report.')}</p>
+      <label class="fld">${t('responsavel')} <span class="req">*</span></label>
+      <input id="f_user" value="${esc(cur.utilizador||cur.inspetor||'')}" placeholder="${L('Nome do utilizador','User name')}">
+      ${sigBlock("sigF2", cur.assinaturaF2, L("Assinatura da Fase 2 (assine no ecrã)","Phase 2 signature (sign on screen)"))}
+      <p class="small" style="margin-top:8px">${cur.id} · ${esc(cur.doc||'')} · ${DOC_FULL}</p>
     </div>
-    <button class="btn primary wide" onclick="concluir()">Concluir inspeção e gerar relatório ›</button>`;
+    <button class="btn primary wide" onclick="concluir()">${t('concluir')} ›</button>`;
   initSig("sigF2", cur.assinaturaF2);
 }
 function concluir(){
-  const k=counts(); if(k.P>0){ toast("Ainda há pontos obrigatórios por validar.","err"); go("resumo"); return; }
-  const u=val("f_user"); if(!u){ toast("Indique o responsável.","err"); return; }
+  const k=counts(); if(k.P>0){ toast(L("Ainda há pontos obrigatórios por validar.","There are still mandatory points to validate."),"err"); go("resumo"); return; }
+  const u=val("f_user"); if(!u){ toast(L("Indique o responsável.","Enter the responsible person."),"err"); return; }
   cur.utilizador=u; cur.assinaturaF2=sigGet(cur.assinaturaF2); cur.fim=Date.now(); if(!cur.fase1Fim)cur.fase1Fim=cur.fim; cur.estado="Concluída";
   cur.resultadoGlobal=(k.NC>0)?"Não conforme":"Conforme"; cur.totalC=k.C; cur.totalNC=k.NC; cur.totalNA=k.NA;
-  save(); toast("Inspeção concluída.","ok"); go("relatorio");
+  save(); toast(L("Inspeção concluída.","Inspection completed."),"ok"); go("relatorio");
 }
 
 // ===== RELATÓRIO =====
 function renderRelatorio(){
   const k={C:cur.totalC||0,NC:cur.totalNC||0,NA:cur.totalNA||0};
   const rowsFor=f=>PONTOS.filter(p=>p.fase===f).map(p=>{const r=cur.respostas[p.c]||{};
-    const res=r.resultado||(p.tp==="Numerico"?(r.valor!==undefined&&r.valor!==""?r.valor+" "+(p.unid||""):"—"):(r.obs?"Preenchido":"—"));
+    const res=r.resultado||(p.tp==="Numerico"?(r.valor!==undefined&&r.valor!==""?r.valor+" "+(p.unid||""):"—"):(r.obs?L("Preenchido","Filled"):"—"));
     const cls=r.resultado?("res-"+r.resultado):"";
     return `<tr><td>${p.c}</td><td>${esc(pT(p))}</td><td class="badge-res ${cls}">${esc(String(res))}</td><td>${esc(r.obs||"")}</td></tr>`;}).join("");
   const ncs=PONTOS.filter(p=>{const r=cur.respostas[p.c];return r&&r.resultado==="NC";});
@@ -713,50 +715,50 @@ function renderRelatorio(){
   const norm=s=>s.toLowerCase().replace(/ /g,"").replace(/í/g,"i").replace(/é/g,"e").replace(/ç/g,"c").replace(/ã/g,"a");
   main.innerHTML=`
     <div class="no-print" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-      <button class="btn accent" onclick="window.print()">⬇ Guardar / Imprimir PDF</button>
-      <button class="btn ghost" onclick="editarInspecao()">✎ Editar</button>
-      <button class="btn ghost" onclick="apagarInspecao('${cur.id}')" style="color:var(--nc)">🗑 Apagar</button>
-      <span class="pill ${norm(cur.estado)}">${cur.estado}</span>
+      <button class="btn accent" onclick="window.print()">⬇ ${L('Guardar / Imprimir PDF','Save / Print PDF')}</button>
+      <button class="btn ghost" onclick="editarInspecao()">✎ ${L('Editar','Edit')}</button>
+      <button class="btn ghost" onclick="apagarInspecao('${cur.id}')" style="color:var(--nc)">🗑 ${L('Apagar','Delete')}</button>
+      <span class="pill ${norm(cur.estado)}">${estadoLabel(cur.estado)}</span>
     </div>
     <div class="rep">
-      <h1>Relatório de Inspeção de Qualidade</h1>
-      <p class="small">Sidel · ${esc(cur.familia||'Checklist')} · <b>${(cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)}</b> · Emitido em ${new Date().toLocaleDateString("pt-PT")}</p>
+      <h1>${L('Relatório de Inspeção de Qualidade','Quality Inspection Report')}</h1>
+      <p class="small">Sidel · ${esc(cur.familia||'Checklist')} · <b>${(cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)}</b> · ${L('Emitido em','Issued on')} ${new Date().toLocaleDateString(LANG==='en'?'en-GB':'pt-PT')}</p>
       <div class="kv">
-        <div class="k">N.º de inspeção</div><div>${cur.id}</div>
-        <div class="k">Nº Documento</div><div>${esc(cur.doc||'—')}</div>
-        <div class="k">Nº Série</div><div>${esc(cur.serie||'—')}</div>
-        <div class="k">Projeto / Cliente</div><div>${esc(cur.projeto||'—')} / ${esc(cur.cliente||'—')}</div>
-        <div class="k">Localização</div><div>${esc(cur.local||'—')}</div>
-        <div class="k">Inspetor</div><div>${esc(cur.inspetor)}</div>
-        <div class="k">Resultado global</div><div class="badge-res ${cur.resultadoGlobal==='Conforme'?'res-C':'res-NC'}"><b>${cur.resultadoGlobal||'—'}</b> (C:${k.C} · NC:${k.NC} · NA:${k.NA})</div>
+        <div class="k">${L('N.º de inspeção','Inspection No.')}</div><div>${cur.id}</div>
+        <div class="k">${t('n_doc')}</div><div>${esc(cur.doc||'—')}</div>
+        <div class="k">${t('n_serie')}</div><div>${esc(cur.serie||'—')}</div>
+        <div class="k">${t('projeto')} / ${t('cliente')}</div><div>${esc(cur.projeto||'—')} / ${esc(cur.cliente||'—')}</div>
+        <div class="k">${t('localizacao')}</div><div>${esc(cur.local||'—')}</div>
+        <div class="k">${t('inspetor')}</div><div>${esc(cur.inspetor)}</div>
+        <div class="k">${L('Resultado global','Overall result')}</div><div class="badge-res ${cur.resultadoGlobal==='Conforme'?'res-C':'res-NC'}"><b>${resGlobalLabel(cur.resultadoGlobal)}</b> (C:${k.C} · NC:${k.NC} · NA:${k.NA})</div>
       </div>
-      <h2>Fase 1</h2>
-      <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(1)}</tbody></table>
-      ${PONTOS.some(p=>(p.fase||1)===2)?`<h2>Fase 2</h2>
-      <table><thead><tr><th>Ponto</th><th>Descrição</th><th>Resultado</th><th>Observações</th></tr></thead><tbody>${rowsFor(2)}</tbody></table>`:''}
-      ${ncs.length?`<h2>Não conformidades (${ncs.length})</h2><table><thead><tr><th>Ponto</th><th>Descrição</th><th>Observação</th></tr></thead><tbody>${ncs.map(p=>`<tr><td>${p.c}</td><td>${esc(pT(p))}</td><td>${esc((cur.respostas[p.c].obs)||"")}</td></tr>`).join("")}</tbody></table>`:''}
-      ${fotos.length?`<h2>Evidências — fotos e documentos (${fotos.length})</h2><div style="display:flex;flex-wrap:wrap;gap:8px">${fotos.map(o=>`<figure style="margin:0;width:150px">${o.f.img?`<img src="${o.f.d}" style="width:150px;height:110px;object-fit:cover;border:1px solid #ccc;border-radius:6px">`:`<a href="${o.f.d}" download="${esc(o.f.n)}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:150px;height:110px;border:1px solid #ccc;border-radius:6px;background:#eef2f8;color:#1F3864;text-decoration:none;font-size:12px;text-align:center;padding:6px">📄<span style="margin-top:4px;word-break:break-all">${esc(shortName(o.f.n))}</span></a>`}<figcaption class="small">${o.c}</figcaption></figure>`).join("")}</div>`:''}
-      <h2>Assinaturas</h2>
+      <h2>${t('fase')} 1</h2>
+      <table><thead><tr><th>${t('ponto')}</th><th>${L('Descrição','Description')}</th><th>${L('Resultado','Result')}</th><th>${t('observacoes')}</th></tr></thead><tbody>${rowsFor(1)}</tbody></table>
+      ${PONTOS.some(p=>(p.fase||1)===2)?`<h2>${t('fase')} 2</h2>
+      <table><thead><tr><th>${t('ponto')}</th><th>${L('Descrição','Description')}</th><th>${L('Resultado','Result')}</th><th>${t('observacoes')}</th></tr></thead><tbody>${rowsFor(2)}</tbody></table>`:''}
+      ${ncs.length?`<h2>${L('Não conformidades','Non-conformities')} (${ncs.length})</h2><table><thead><tr><th>${t('ponto')}</th><th>${L('Descrição','Description')}</th><th>${t('observacoes')}</th></tr></thead><tbody>${ncs.map(p=>`<tr><td>${p.c}</td><td>${esc(pT(p))}</td><td>${esc((cur.respostas[p.c].obs)||"")}</td></tr>`).join("")}</tbody></table>`:''}
+      ${fotos.length?`<h2>${L('Evidências — fotos e documentos','Evidence — photos and documents')} (${fotos.length})</h2><div style="display:flex;flex-wrap:wrap;gap:8px">${fotos.map(o=>`<figure style="margin:0;width:150px">${o.f.img?`<img src="${o.f.d}" style="width:150px;height:110px;object-fit:cover;border:1px solid #ccc;border-radius:6px">`:`<a href="${o.f.d}" download="${esc(o.f.n)}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:150px;height:110px;border:1px solid #ccc;border-radius:6px;background:#eef2f8;color:#1F3864;text-decoration:none;font-size:12px;text-align:center;padding:6px">📄<span style="margin-top:4px;word-break:break-all">${esc(shortName(o.f.n))}</span></a>`}<figcaption class="small">${o.c}</figcaption></figure>`).join("")}</div>`:''}
+      <h2>${L('Assinaturas','Signatures')}</h2>
       <div style="display:flex;gap:40px;flex-wrap:wrap">
         <div>
-          <div class="small">Fase 1 — ${esc(cur.utilizadorF1||cur.inspetor)}</div>
+          <div class="small">${t('fase')} 1 — ${esc(cur.utilizadorF1||cur.inspetor)}</div>
           ${cur.assinaturaF1?`<img class="sig-img" src="${cur.assinaturaF1}">`:'<div class="sig-img"></div>'}
           <div class="small">${fmt(cur.fase1Fim)}</div>
         </div>
         <div>
-          <div class="small">Fase 2 — ${esc(cur.utilizador||cur.inspetor)}</div>
+          <div class="small">${t('fase')} 2 — ${esc(cur.utilizador||cur.inspetor)}</div>
           ${cur.assinaturaF2?`<img class="sig-img" src="${cur.assinaturaF2}">`:'<div class="sig-img"></div>'}
           <div class="small">${fmt(cur.fim)}</div>
         </div>
       </div>
-      <h2>Registo</h2>
+      <h2>${L('Registo','Record')}</h2>
       <div class="kv">
-        <div class="k">Família</div><div>${esc(cur.familia||'—')}</div>
-        <div class="k">Inspetor responsável</div><div>${esc(cur.inspetor)}</div>
-        <div class="k">Início</div><div>${fmt(cur.inicio)}</div>
-        <div class="k">Fim da Fase 1</div><div>${fmt(cur.fase1Fim)}</div>
-        <div class="k">Conclusão</div><div>${fmt(cur.fim)}</div>
-        <div class="k">Documento / versão</div><div>${(cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)}</div>
+        <div class="k">${t('familia')}</div><div>${esc(cur.familia||'—')}</div>
+        <div class="k">${L('Inspetor responsável','Responsible inspector')}</div><div>${esc(cur.inspetor)}</div>
+        <div class="k">${L('Início','Start')}</div><div>${fmt(cur.inicio)}</div>
+        <div class="k">${L('Fim da Fase 1','End of Phase 1')}</div><div>${fmt(cur.fase1Fim)}</div>
+        <div class="k">${L('Conclusão','Conclusion')}</div><div>${fmt(cur.fim)}</div>
+        <div class="k">${L('Documento / versão','Document / version')}</div><div>${(cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)}</div>
       </div>
     </div>`;
 }
@@ -843,12 +845,12 @@ function cloudReadyCheck(){
   if(!cloudReady||!FBauth){ toast("A nuvem ainda não ligou. Verifica o firebase-config.js.","err"); return false; }
   return true;
 }
-function entrar(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"); if(!em||!pw){toast("Preencha email e palavra-passe.","err");return;}
-  FBauth.signInWithEmailAndPassword(em,pw).then(()=>{toast("Sessão iniciada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
-function criarConta(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"),pw2=val("f_pw2"); if(!em||pw.length<6){toast("Email válido e palavra-passe (mín. 6).","err");return;}
-  if(document.getElementById("f_pw2") && pw!==pw2){ toast("As palavras-passe não coincidem.","err"); return; }
-  FBauth.createUserWithEmailAndPassword(em,pw).then(()=>{toast("Conta criada e ligada.","ok");go("home");}).catch(e=>toast(trad(e),"err")); }
-function sair(){ FBauth.signOut().then(()=>{toast("Sessão terminada.","ok");go("sync");}); }
+function entrar(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"); if(!em||!pw){toast(L("Preencha email e palavra-passe.","Enter email and password."),"err");return;}
+  FBauth.signInWithEmailAndPassword(em,pw).then(()=>{toast(L("Sessão iniciada.","Signed in."),"ok");go("home");}).catch(e=>toast(trad(e),"err")); }
+function criarConta(){ if(!cloudReadyCheck())return; const em=val("f_em"),pw=val("f_pw"),pw2=val("f_pw2"); if(!em||pw.length<6){toast(L("Email válido e palavra-passe (mín. 6).","Valid email and password (min. 6)."),"err");return;}
+  if(document.getElementById("f_pw2") && pw!==pw2){ toast(L("As palavras-passe não coincidem.","Passwords do not match."),"err"); return; }
+  FBauth.createUserWithEmailAndPassword(em,pw).then(()=>{toast(L("Conta criada e ligada.","Account created and signed in."),"ok");go("home");}).catch(e=>toast(trad(e),"err")); }
+function sair(){ FBauth.signOut().then(()=>{toast(L("Sessão terminada.","Signed out."),"ok");go("sync");}); }
 function trad(e){ const c=e&&e.code; const m={"auth/invalid-email":"Email inválido.","auth/user-not-found":"Utilizador não encontrado.","auth/wrong-password":"Palavra-passe errada.","auth/email-already-in-use":"Este email já tem conta — use «Entrar».","auth/weak-password":"Palavra-passe fraca (mín. 6).","auth/invalid-credential":"Credenciais inválidas.","auth/operation-not-allowed":"Falta ativar Email/palavra-passe no Firebase (Authentication).","auth/unauthorized-domain":"Domínio não autorizado no Firebase (Authentication → Definições → Domínios autorizados).","auth/network-request-failed":"Sem ligação à internet.","auth/requires-recent-login":"Por segurança, termine sessão e volte a entrar antes de mudar a palavra-passe.","auth/too-many-requests":"Demasiadas tentativas. Tente mais tarde."}; return m[c]||("Erro: "+(c||(e&&e.message)||e)); }
 
 function renderSync(){
@@ -904,22 +906,22 @@ function renderMudarPw(){
     <button class="btn ghost wide" onclick="go('sync')">${t('voltar')}</button>`;
 }
 function adminResetPw(){
-  if(!isAdmin){ toast("Apenas administradores.","err"); return; }
+  if(!isAdmin){ toast(L("Apenas administradores.","Administrators only."),"err"); return; }
   if(!cloudReadyCheck())return;
-  const em=val("f_admresetem"); if(!em){ toast("Indique o email do utilizador.","err"); return; }
+  const em=val("f_admresetem"); if(!em){ toast(L("Indique o email do utilizador.","Enter the user's email."),"err"); return; }
   FBauth.sendPasswordResetEmail(em)
-    .then(()=>toast("Email de reposição enviado para "+em+".","ok"))
+    .then(()=>toast(L("Email de reposição enviado para ","Reset email sent to ")+em+".","ok"))
     .catch(e=>toast(trad(e),"err"));
 }
 function mudarPw(){
   if(!cloudReadyCheck())return;
   const atual=val("f_pwa"), nova=val("f_pwn"), nova2=val("f_pwn2");
-  if(!atual||nova.length<6){ toast("Preencha a atual e uma nova (mín. 6).","err"); return; }
-  if(nova!==nova2){ toast("As novas palavras-passe não coincidem.","err"); return; }
+  if(!atual||nova.length<6){ toast(L("Preencha a atual e uma nova (mín. 6).","Enter the current and a new one (min. 6)."),"err"); return; }
+  if(nova!==nova2){ toast(L("As novas palavras-passe não coincidem.","The new passwords do not match."),"err"); return; }
   const cred=firebase.auth.EmailAuthProvider.credential(FBuser.email, atual);
   FBuser.reauthenticateWithCredential(cred)
     .then(()=>FBuser.updatePassword(nova))
-    .then(()=>{ toast("Palavra-passe alterada.","ok"); go("sync"); })
+    .then(()=>{ toast(L("Palavra-passe alterada.","Password changed."),"ok"); go("sync"); })
     .catch(e=>toast(trad(e),"err"));
 }
 
@@ -948,25 +950,25 @@ function renderConfig(){
   view="config"; btnBack.style.display="inline-block";
   const rows=FAMILIAS.map(f=>`<div class="list-item" onclick="editFam('${esc(f.nome).replace(/'/g,"\\'")}')">
      <div class="t"><div><b>${esc(f.nome)}</b></div>
-       <div class="code">${(f.pontos||[]).length} pontos</div></div>
+       <div class="code">${(f.pontos||[]).length} ${L('pontos','points')}</div></div>
      <span style="color:var(--accent);font-size:20px">›</span></div>`).join("");
   main.innerHTML=`<h1>${t('config')}</h1>
     <div class="card">
-      <label class="fld">Nova família (nome)</label>
+      <label class="fld">${L('Nova família (nome)','New family (name)')}</label>
       <input id="f_newfam" placeholder="ex.: Aidlin, Optifeed, Laser Oven, Conveyor">
-      <p class="small" style="margin-top:6px">A nova família é criada a partir da checklist base.</p>
-      <button class="btn primary wide" style="margin-top:10px" onclick="criarFamilia()">Adicionar família</button>
+      <p class="small" style="margin-top:6px">${L('A nova família é criada a partir da checklist base.','The new family is created from the base checklist.')}</p>
+      <button class="btn primary wide" style="margin-top:10px" onclick="criarFamilia()">${L('Adicionar família','Add family')}</button>
     </div>
-    <div class="ov-sec-title">Famílias de produto</div>
+    <div class="ov-sec-title">${L('Famílias de produto','Product families')}</div>
     ${rows}
     <button class="btn ghost wide" style="margin-top:12px" onclick="go('home')">${t('voltar')}</button>`;
 }
 function criarFamilia(){
   const nome=val("f_newfam");
-  if(!nome){ toast("Indique o nome da família.","err"); return; }
-  if(FAMILIAS.some(f=>f.nome.toLowerCase()===nome.toLowerCase())){ toast("Já existe uma família com esse nome.","err"); return; }
+  if(!nome){ toast(L("Indique o nome da família.","Enter the family name."),"err"); return; }
+  if(FAMILIAS.some(f=>f.nome.toLowerCase()===nome.toLowerCase())){ toast(L("Já existe uma família com esse nome.","A family with that name already exists."),"err"); return; }
   const fam={ nome, pontos:clonePts(BASE), _id:slug(nome) };
-  FAMILIAS.push(fam); saveFamilia(fam); toast("Família criada.","ok"); render();
+  FAMILIAS.push(fam); saveFamilia(fam); toast(L("Família criada.","Family created."),"ok"); render();
 }
 function editFam(n){ curFam=famByName(n); go("configfam"); }
 function renderConfigFam(){
@@ -974,41 +976,41 @@ function renderConfigFam(){
   view="configfam"; btnBack.style.display="inline-block";
   const rows=(curFam.pontos||[]).map((p,i)=>`<div class="list-item">
      <div class="t" onclick="editPonto(${i})" style="cursor:pointer"><div><b>${esc(p.c)}</b> · ${esc(p.t)}</div>
-       <div class="code">${esc(p.s)} · ${p.tp} · Fase ${p.fase||1}${p.ob?' · obrig.':''}</div></div>
+       <div class="code">${esc(p.s)} · ${p.tp} · ${t('fase')} ${p.fase||1}${p.ob?' · '+L('obrig.','req.'):''}</div></div>
      <button class="btn ghost" style="padding:8px 10px;color:var(--nc)" onclick="delPonto(${i})">🗑</button>
    </div>`).join("");
   main.innerHTML=`<h1>${esc(curFam.nome)}</h1>
-    <p class="small" style="margin-top:-6px;margin-bottom:8px">Edita a lista de controlo desta família. A versão/revisões gerem-se em «Sobre / versão».</p>
-    <div class="ov-sec-title">Pontos (${(curFam.pontos||[]).length})</div>
+    <p class="small" style="margin-top:-6px;margin-bottom:8px">${L('Edita a lista de controlo desta família. A versão/revisões gerem-se em «Sobre / versão».','Edit this checklist. Version/revisions are managed in «About / version».')}</p>
+    <div class="ov-sec-title">${L('Pontos','Points')} (${(curFam.pontos||[]).length})</div>
     ${rows}
-    <button class="btn primary wide" style="margin-top:10px" onclick="editPonto(-1)">＋ Adicionar ponto</button>
-    <button class="btn ghost wide" style="margin-top:8px;color:var(--nc)" onclick="apagarFamilia()">Apagar família</button>
+    <button class="btn primary wide" style="margin-top:10px" onclick="editPonto(-1)">＋ ${L('Adicionar ponto','Add point')}</button>
+    <button class="btn ghost wide" style="margin-top:8px;color:var(--nc)" onclick="apagarFamilia()">${L('Apagar família','Delete family')}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="go('config')">${t('voltar')}</button>`;
 }
-function apagarFamilia(){ if(confirm("Apagar a família «"+curFam.nome+"»?")){ deleteFamilia(curFam); FAMILIAS=FAMILIAS.filter(f=>f!==curFam); curFam=null; go("config"); } }
-function delPonto(i){ if(confirm("Apagar este ponto?")){ curFam.pontos.splice(i,1); saveFamilia(curFam); render(); } }
+function apagarFamilia(){ if(confirm(L("Apagar a família «","Delete family «")+curFam.nome+"»?")){ deleteFamilia(curFam); FAMILIAS=FAMILIAS.filter(f=>f!==curFam); curFam=null; go("config"); } }
+function delPonto(i){ if(confirm(L("Apagar este ponto?","Delete this point?"))){ curFam.pontos.splice(i,1); saveFamilia(curFam); render(); } }
 function editPonto(i){ curPtIdx=i; go("configponto"); }
 function renderConfigPonto(){
   if(!isAdmin||!curFam){ go("config"); return; }
   view="configponto"; btnBack.style.display="inline-block";
   const novo=curPtIdx<0; const p=novo?{c:"",s:"",s_en:"",t:"",t_en:"",cr:"",cr_en:"",tp:"CNCNA",ob:1,fase:1,min:"",max:"",unid:""}:curFam.pontos[curPtIdx];
-  main.innerHTML=`<h1>${novo?'Novo ponto':'Editar ponto'}</h1>
+  main.innerHTML=`<h1>${novo?L('Novo ponto','New point'):L('Editar ponto','Edit point')}</h1>
     <div class="card grid">
-      <div class="row"><div><label class="fld">Código</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
-      <div><label class="fld">Fase</label><select id="p_fase"><option value="1" ${(p.fase||1)==1?'selected':''}>1</option><option value="2" ${(p.fase||1)==2?'selected':''}>2</option></select></div></div>
-      <div><label class="fld">Secção (PT)</label><input id="p_s" value="${esc(p.s)}" placeholder="ex.: 1. Documentação"></div>
-      <div><label class="fld">Secção (EN)</label><input id="p_sen" value="${esc(p.s_en||'')}" placeholder="ex.: 1. Documentation"></div>
-      <div><label class="fld">Título (PT)</label><input id="p_t" value="${esc(p.t)}"></div>
-      <div><label class="fld">Título (EN)</label><input id="p_ten" value="${esc(p.t_en||'')}"></div>
-      <div><label class="fld">Critério (PT)</label><textarea id="p_cr">${esc(p.cr)}</textarea></div>
-      <div><label class="fld">Critério (EN)</label><textarea id="p_cren">${esc(p.cr_en||'')}</textarea></div>
-      <div class="row"><div><label class="fld">Tipo de resposta</label><select id="p_tp">
+      <div class="row"><div><label class="fld">${L('Código','Code')}</label><input id="p_c" value="${esc(p.c)}" placeholder="ex.: 1.1"></div>
+      <div><label class="fld">${t('fase')}</label><select id="p_fase"><option value="1" ${(p.fase||1)==1?'selected':''}>1</option><option value="2" ${(p.fase||1)==2?'selected':''}>2</option></select></div></div>
+      <div><label class="fld">${L('Secção','Section')} (PT)</label><input id="p_s" value="${esc(p.s)}" placeholder="ex.: 1. Documentação"></div>
+      <div><label class="fld">${L('Secção','Section')} (EN)</label><input id="p_sen" value="${esc(p.s_en||'')}" placeholder="ex.: 1. Documentation"></div>
+      <div><label class="fld">${L('Título','Title')} (PT)</label><input id="p_t" value="${esc(p.t)}"></div>
+      <div><label class="fld">${L('Título','Title')} (EN)</label><input id="p_ten" value="${esc(p.t_en||'')}"></div>
+      <div><label class="fld">${L('Critério','Criterion')} (PT)</label><textarea id="p_cr">${esc(p.cr)}</textarea></div>
+      <div><label class="fld">${L('Critério','Criterion')} (EN)</label><textarea id="p_cren">${esc(p.cr_en||'')}</textarea></div>
+      <div class="row"><div><label class="fld">${L('Tipo de resposta','Answer type')}</label><select id="p_tp">
         ${["CNCNA","Numerico","Texto"].map(o=>`<option ${p.tp===o?'selected':''}>${o}</option>`).join("")}
       </select></div>
-      <div><label class="fld">Obrigatório</label><select id="p_ob"><option value="1" ${p.ob?'selected':''}>Sim</option><option value="0" ${!p.ob?'selected':''}>Não</option></select></div></div>
-      <div class="row"><div><label class="fld">Mín (num.)</label><input id="p_min" value="${p.min??''}"></div>
-      <div><label class="fld">Máx (num.)</label><input id="p_max" value="${p.max??''}"></div>
-      <div><label class="fld">Unidade</label><input id="p_unid" value="${esc(p.unid||'')}"></div></div>
+      <div><label class="fld">${L('Obrigatório','Mandatory')}</label><select id="p_ob"><option value="1" ${p.ob?'selected':''}>${L('Sim','Yes')}</option><option value="0" ${!p.ob?'selected':''}>${L('Não','No')}</option></select></div></div>
+      <div class="row"><div><label class="fld">${L('Mín','Min')} (num.)</label><input id="p_min" value="${p.min??''}"></div>
+      <div><label class="fld">${L('Máx','Max')} (num.)</label><input id="p_max" value="${p.max??''}"></div>
+      <div><label class="fld">${L('Unidade','Unit')}</label><input id="p_unid" value="${esc(p.unid||'')}"></div></div>
     </div>
     <button class="btn primary wide" onclick="salvarPonto()">${t('guardar')}</button>
     <button class="btn ghost wide" style="margin-top:8px" onclick="go('configfam')">${t('cancelar')}</button>`;
@@ -1017,9 +1019,9 @@ function salvarPonto(){
   const p={ c:val("p_c"), s:val("p_s"), s_en:val("p_sen"), t:val("p_t"), t_en:val("p_ten"), cr:val("p_cr"), cr_en:val("p_cren"), tp:val("p_tp"), ob: val("p_ob")==="1"?1:0, rf:0, fase: parseInt(val("p_fase"))||1 };
   const mn=val("p_min"), mx=val("p_max"), un=val("p_unid");
   if(mn!=="") p.min=parseFloat(mn.replace(",",".")); if(mx!=="") p.max=parseFloat(mx.replace(",",".")); if(un) p.unid=un;
-  if(!p.c||!p.t){ toast("Código e título (PT) são obrigatórios.","err"); return; }
+  if(!p.c||!p.t){ toast(L("Código e título (PT) são obrigatórios.","Code and title (PT) are required."),"err"); return; }
   if(curPtIdx<0) curFam.pontos.push(p); else curFam.pontos[curPtIdx]=p;
-  saveFamilia(curFam); toast("Ponto guardado.","ok"); go("configfam");
+  saveFamilia(curFam); toast(L("Ponto guardado.","Point saved."),"ok"); go("configfam");
 }
 function renderConfigRev(){ go("sobre"); } // revisões geridas na página Sobre
 // Revisões GLOBAIS (geridas na página Sobre pelo administrador)
@@ -1035,7 +1037,7 @@ function editRev(i){
   if(novo) REVISOES.push(obj); else REVISOES[i]=obj;
   saveRevisoes(); render();
 }
-function delRev(i){ if(!isAdmin)return; if(confirm("Apagar revisão?")){ REVISOES.splice(i,1); saveRevisoes(); render(); } }
+function delRev(i){ if(!isAdmin)return; if(confirm(L("Apagar revisão?","Delete revision?"))){ REVISOES.splice(i,1); saveRevisoes(); render(); } }
 function loadRevisoes(){
   if(!cloudReady||!FBuser) return;
   FBdb.collection("config").doc("versoes").get().then(d=>{ if(d&&d.exists&&Array.isArray(d.data().linhas)) REVISOES=d.data().linhas; if(view==="sobre")render(); }).catch(()=>{});
