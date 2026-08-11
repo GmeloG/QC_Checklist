@@ -326,7 +326,7 @@ function go(v){ view=v; window.scrollTo(0,0); render(); }
 
 function render(){
   const lb=document.getElementById("langBtn"); if(lb) lb.textContent=LANG.toUpperCase();
-  hdrRight.innerHTML = (cur?cur.id+"<br>":"") + (cur?((cur.docCode||DOC_CODE)+"_"+(cur.docVer||DOC_VER)):DOC_FULL);
+  hdrRight.innerHTML = cur?esc(cur.id):"";
   // BARREIRA DE LOGIN: com a nuvem configurada, só entra autenticado
   if(cfgValid()){
     if(!authResolved) { btnBack.style.display="none"; return renderLoading(); }
