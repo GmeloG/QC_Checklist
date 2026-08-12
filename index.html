@@ -768,7 +768,7 @@ function renderRelatorio(){
         <div class="k">${t('projeto')} / ${t('cliente')}</div><div>${esc(cur.projeto||'—')} / ${esc(cur.cliente||'—')}</div>
         <div class="k">${t('localizacao')}</div><div>${esc(cur.local||'—')}</div>
         <div class="k">${t('inspetor')}</div><div>${esc(cur.inspetor)}</div>
-        <div class="k">${L('Resultado global','Overall result')}</div><div class="badge-res ${cur.resultadoGlobal==='Conforme'?'res-C':'res-NC'}"><b>${resGlobalLabel(cur.resultadoGlobal)}</b> (C:${k.C} · NC:${k.NC} · NA:${k.NA})</div>
+        <div class="k">${L('Resultado global','Overall result')}</div><div class="badge-res ${cur.resultadoGlobal==='Conforme'?'res-C':'res-NC'}"><b>C:${k.C} · NC:${k.NC} · NA:${k.NA}</b></div>
       </div>
       <h2>${t('fase')} 1</h2>
       <table><thead><tr><th>${t('ponto')}</th><th>${L('Descrição','Description')}</th><th>${L('Resultado','Result')}</th><th>${t('observacoes')}</th></tr></thead><tbody>${rowsFor(1)}</tbody></table>
@@ -1018,7 +1018,7 @@ function renderConfigFam(){
      <button class="btn ghost" style="padding:8px 10px;color:var(--nc)" onclick="delPonto(${i})">🗑</button>
    </div>`).join("");
   main.innerHTML=`<h1>${esc(curFam.nome)}</h1>
-    <p class="small" style="margin-top:-6px;margin-bottom:8px">${L('Edita a lista de controlo desta família. A versão/revisões gerem-se em «Sobre / versão».','Edit this checklist. Version/revisions are managed in «About / version».')}</p>
+    <p class="small" style="margin-top:-6px;margin-bottom:8px">${L('Edita a lista de controlo desta família.','Edit this checklist.')}</p>
     <div class="ov-sec-title">${L('Pontos','Points')} (${(curFam.pontos||[]).length})</div>
     ${rows}
     <button class="btn primary wide" style="margin-top:10px" onclick="editPonto(-1)">＋ ${L('Adicionar ponto','Add point')}</button>
